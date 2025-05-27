@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Consulta Notas Fiscais</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f4;
+      overflow: hidden; /* Impede rolagem da página */
+    }
+
+    .container {
+      display: flex;
+      height: 100%;
+    }
+
+    .sidebar {
+      width: 5%;
+      background-color: #0288d1;
+      color: white;
+      padding: 10px;
+    }
+
+    .content {
+      flex: 1;
+      padding: 20px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .filter-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th, td {
+      padding: 2px;
+      border: 1px solid #ccc;
+      text-align: left;
+    }
+
+    th {
+      background-color: #e0e0e0;
+    }
+
+    thead {
+      position: sticky;
+      top: 0;
+      background-color: white;
+      z-index: 2;
+    }
+
+    .table-wrapper {
+      flex: 1;
+      overflow-y: auto; /* Permite rolagem só nesta área */
+    }
+
+    input, button {
+      margin: 0px 0;
+      padding: 0px;
+    }
+
+    table, th, td {
+    font-size: 12px;
+    }
+
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="sidebar">
+      <h3>Coco do Vale</h3>
+      <ul>
+        <li>NF-e</li>
+      </ul>
+    </div>
+    <div class="content">
+      <h2>Notas Fiscais</h2>
+      <div class="filter-group">
+        <label>Emissão de: <input type="date" id="startDate" /></label>
+        <label>Até: <input type="date" id="endDate" /></label>
+        <input type="text" id="notaFilter" placeholder="NF" />
+        <input type="text" id="ufFilter" placeholder="UF" />
+        <button onclick="filterData()">Pesquisar</button>
+        <button onclick="clearFilters()">Limpar</button>
+      </div>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Ações</th>
+              <th>Nota</th>
+              <th>Dt Saída</th>
+              <th>Dt Redespacho</th>
+              <th>Dt Previsão</th>
+              <th>Prev. Entrega</th>
+              <th>Ocorrência da Nota</th>
+              <th>Cód.Cliente</th>
+              <th>Razão Social</th>
+              <th>Cidade</th>
+              <th>UF</th>
+              <th>Peso Brut</th>
+              <th>Val. Brut</th>
+            </tr>
+          </thead>
+          <tbody id="tabelaNotas"></tbody>
+        </table>
+      </div>
+      <p>Total: <span id="total"></span></p>
+    </div>
+  </div>
+  <script>
+    let dados = [];
+
+    async function carregarDados() {
+      // MANTENDO A URL ORIGINAL, mas lembre-se que ela precisa ser uma URL de publicação CSV
+      const url = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRrclG6V0hZ6mUJAP5J5zwZPi4Qfw-NJjjk0apARx1Kk-KROKenmVdHx4yZW3reeC23sp7ChUZOZKhy/pub?output=csv';
+      try {
+        const resposta = await fetch(url);
+        if (!resposta.ok) {
+          throw new Error(`Erro ao carregar dados: ${resposta.statusText} (Status: ${resposta.status})`);
+        }
+        const texto = await resposta.text();
+        const linhas = texto.split('\n').filter(linha => linha.trim() !== '');
+
+        if (linhas.length === 0) {
+          console.warn("Nenhuma linha válida encontrada no CSV após o filtro.");
+          document.getElementById('total').textContent = '0';
+          return;
+        }
+
+        const cabecalhos = linhas[0].split(',');
+
+        dados = linhas.slice(1).map(linha => {
+          const colunas = linha.split(',');
+          // Aqui, estamos assumindo que as colunas estão corretas após o split.
+          // Se houver problema de desalinhamento devido a vírgulas em números,
+          // será necessário um parser CSV mais robusto.
+          return cabecalhos.reduce((obj, cab, i) => {
+            obj[cab.trim()] = colunas[i]?.trim();
+            return obj;
+          }, {});
+        });
+
+        exibirDados(dados);
+      } catch (error) {
+        console.error("Erro ao carregar ou processar os dados:", error);
+        document.getElementById('tabelaNotas').innerHTML = '<tr><td colspan="13" style="text-align:center; color:red;">Erro ao carregar os dados. Verifique a URL da planilha e a conexão.</td></tr>';
+        document.getElementById('total').textContent = 'Erro';
+      }
+    }
+
+    function exibirDados(lista) {
+      const tabela = document.getElementById('tabelaNotas');
+      tabela.innerHTML = '';
+
+      // Função para limpar aspas e converter para número (se possível)
+      // Esta função é para a LEITURA INTERNA do valor
+      const limparValorNumerico = (val) => {
+        if (typeof val !== 'string' || !val) return val; // Retorna o próprio valor se não for string ou for vazio
+
+        // Remove aspas e substitui vírgula por ponto para conversão em número
+        // Também remove pontos de milhares se existirem antes de converter para número
+        const limpo = val.replace(/"/g, '').replace(/\./g, '').replace(/,/g, '.');
+        return isNaN(limpo) ? val : Number(limpo);
+      };
+
+      // Função para formatar números para o padrão brasileiro para EXIBIÇÃO
+      const formatarNumeroBR = (numero) => {
+        // Tenta converter para número se ainda não for
+        if (typeof numero !== 'number') {
+            const parsed = parseFloat(String(numero).replace(/\./g, '').replace(/,/g, '.'));
+            if (isNaN(parsed)) return numero; // Retorna o original se não for um número válido após tentativa de parsing
+            numero = parsed;
+        }
+        // Formata para o padrão brasileiro com 2 casas decimais
+        return numero.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      };
+
+      if (lista.length === 0) {
+          tabela.innerHTML = '<tr><td colspan="13" style="text-align:center;">Nenhum resultado encontrado para os filtros.</td></tr>';
+      } else {
+          lista.forEach(item => {
+            const linha = document.createElement('tr');
+
+            linha.innerHTML = `
+              <td><button onclick="alert('Visualizar NF ${item['Nota'] || ''}')">Ver</button></td>
+              <td>${item['Nota'] || ''}</td>
+              <td>${item['DT Saída'] || ''}</td>
+              <td>${item['Dt Chegada'] || ''}</td>
+              <td>${item['DT Previsão'] || ''}</td>
+              <td>${item['Prev. Entrega'] || ''}</td>
+              <td>${item['Ocorrência da Nota'] || ''}</td>
+              <td>${item['Cod.Cliente'] || ''}</td>
+              <td>${item['Razão Social'] || ''}</td>
+              <td>${item['Cidade'] || ''}</td>
+              <td>${item['UF'] || ''}</td>
+              <td>${formatarNumeroBR(limparValorNumerico(item['Peso Brut']))}</td>
+              <td>${formatarNumeroBR(limparValorNumerico(item['Val. Brut']))}</td>
+            `;
+            tabela.appendChild(linha);
+          });
+      }
+      document.getElementById('total').textContent = lista.length;
+    }
+
+
+    function filterData() {
+      const nota = document.getElementById('notaFilter').value.trim();
+      const uf = document.getElementById('ufFilter').value.trim().toUpperCase();
+      const start = document.getElementById('startDate').value;
+      const end = document.getElementById('endDate').value;
+
+      const filtrado = dados.filter(item => {
+        const dtSaidaParts = item['DT Saída']?.split('/');
+        const dtSaida = dtSaidaParts && dtSaidaParts.length === 3 ? `${dtSaidaParts[2]}-${dtSaidaParts[1]}-${dtSaidaParts[0]}` : '';
+        let dataValida = true;
+
+        if (start) dataValida = dataValida && (dtSaida >= start);
+        if (end) dataValida = dataValida && (dtSaida <= end);
+
+        const notaValida = !nota || item['Nota'] === nota;
+        const ufValida = !uf || item['UF'] === uf;
+
+        return dataValida && notaValida && ufValida;
+      });
+
+      exibirDados(filtrado);
+    }
+
+    function clearFilters() {
+      document.getElementById('notaFilter').value = '';
+      document.getElementById('ufFilter').value = '';
+      document.getElementById('startDate').value = '';
+      document.getElementById('endDate').value = '';
+      exibirDados(dados);
+    }
+
+    carregarDados();
+  </script>
+</body>
+</html>
