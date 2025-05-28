@@ -159,6 +159,13 @@
           }, {});
         });
 
+        // ORDENAR POR NOTA AQUI
+        dados.sort((a, b) => {
+          const notaA = parseInt(a['Nota'] || '0', 10);
+          const notaB = parseInt(b['Nota'] || '0', 10);
+          return notaA - notaB;
+        });
+
         exibirDados(dados);
       } catch (e) {
         console.error(e);
