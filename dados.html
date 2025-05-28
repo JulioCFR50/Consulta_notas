@@ -114,15 +114,15 @@
             <tr>
               <th>Ações</th>
               <th>Nota</th>
+              <th>DT Emissão</th>
               <th>Dt Saída</th>
               <th>Dt Redespacho</th>
-              <th>DT Previsão</th>
+              <th>Dt Previsão</th>
               <th>Ocorrência da Nota</th>
               <th>Cód.Cliente</th>
               <th>Razão Social</th>
               <th>Cidade</th>
-              <th>UF</th>
-              <th>Peso Brut</th>
+              <th>UF</th>            
               <th>Val. Brut</th>
             </tr>
           </thead>
@@ -202,18 +202,18 @@
 
         const linha = document.createElement('tr');
         linha.innerHTML = `
-          <td><button onclick="alert('Visualizar NF ${item['Nota']}')">Ver</button></td>
-          <td>${item['Nota'] || ''}</td>
-          <td>${item['DT Saída'] || ''}</td>
-          <td>${item['Dt Chegada'] || ''}</td>
-          <td>${item['DT Previsão'] || ''}</td>
-          <td>${item['Ocorrência da Nota'] || ''}</td>
-          <td>${item['Cod.Cliente'] || ''}</td>
-          <td>${item['Razão Social'] || ''}</td>
-          <td>${item['Cidade'] || ''}</td>
-          <td>${item['UF'] || ''}</td>
-          <td class="right-align">${formatarNumeroBR(peso)}</td>
-          <td class="right-align">${formatarNumeroBR(valor)}</td>
+          <td><button onclick="alert('Nota: ${item['Nota'] || ''}\\nCliente: ${item['Razão Social'] || ''}\\nCidade/UF: ${item['Cidade']}\\nValor Bruto: ${item['Val.Brut'] || ''}')">Ver</button></td>
+            <td>${item['Nota'] || ''}</td>
+            <td>${item['DT Emissão'] || ''}</td>
+            <td>${item['DT Saída'] || ''}</td>
+            <td>${item['Dt Chegada'] || ''}</td>
+            <td>${item['DT Previsão'] || ''}</td>
+            <td>${item['Ocorrência da Nota'] || ''}</td>
+            <td>${item['Cod.Cliente'] || ''}</td>
+            <td>${item['Razão Social'] || ''}</td>
+            <td>${item['Cidade'] || ''}</td>
+            <td>${item['UF'] || ''}</td>
+            <td>${formatarNumeroBR(limparValorNumerico(item['Val.Brut'] || item['Val. Brut']))}</td>
         `;
         tabela.appendChild(linha);
       });
