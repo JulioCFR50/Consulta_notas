@@ -2,7 +2,7 @@
 <html lang="pt-br">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Consulta Notas Fiscais</title>
   <style>
     html, body {
@@ -11,80 +11,90 @@
       height: 100%;
       font-family: Arial, sans-serif;
       background-color: #f4f4f4;
-      overflow: hidden; /* Impede rolagem da página */
+      overflow: hidden;
     }
-
     .container {
       display: flex;
-      height: 100%;
+      height: 100vh;
     }
-
     .sidebar {
       width: 5%;
       background-color: #0288d1;
       color: white;
       padding: 10px;
+      box-sizing: border-box;
     }
-
+    .sidebar h3 {
+      font-size: 14px;
+      margin-top: 0;
+    }
     .content {
       flex: 1;
       padding: 20px;
-      overflow: hidden;
       display: flex;
       flex-direction: column;
+      overflow: hidden;
     }
-
     .filter-group {
       display: flex;
-      align-items: center;
       gap: 10px;
       flex-wrap: wrap;
       margin-bottom: 10px;
+      align-items: center;
     }
-
+    .filter-group label {
+      font-size: 12px;
+    }
+    .filter-group input[type="text"],
+    .filter-group input[type="date"] {
+      font-size: 12px;
+      padding: 2px 4px;
+      height: 24px;
+    }
+    .filter-group button {
+      font-size: 12px;
+      padding: 4px 8px;
+      cursor: pointer;
+    }
+    .table-wrapper {
+      flex: 1;
+      overflow-y: auto;
+      border: 1px solid #ccc;
+      background: white;
+    }
     table {
       width: 100%;
       border-collapse: collapse;
+      font-size: 12px;
     }
-
-    th, td {
-      padding: 2px;
-      border: 1px solid #ccc;
-      text-align: left;
-    }
-
-    th {
-      background-color: #e0e0e0;
-    }
-
     thead {
       position: sticky;
       top: 0;
-      background-color: white;
-      z-index: 2;
+      background: #e0e0e0;
+      z-index: 1;
     }
-
-    .table-wrapper {
-      flex: 1;
-      overflow-y: auto; /* Permite rolagem só nesta área */
+    th, td {
+      padding: 4px 6px;
+      border: 1px solid #ccc;
+      text-align: left;
     }
-
-    input, button {
-      margin: 0px 0;
-      padding: 0px;
+    .right-align {
+      text-align: right;
     }
-
-    table, th, td {
-    font-size: 12px;
+    .center-align {
+      text-align: center;
     }
-
+    #total-container {
+      margin-top: 10px;
+      font-size: 14px;
+    }
   </style>
 </head>
 <body>
   <div class="container">
     <div class="sidebar">
       <h3>Coco do Vale</h3>
-      <ul>
+      <ul style="list-style: none; padding-left: 0; font-size: 12px;">
         <li>NF-e</li>
       </ul>
     </div>
@@ -106,7 +116,6 @@
               <th>Nota</th>
               <th>Dt Saída</th>
               <th>Dt Redespacho</th>
-              <th>Dt Previsão</th>
               <th>Prev. Entrega</th>
               <th>Ocorrência da Nota</th>
               <th>Cód.Cliente</th>
@@ -120,123 +129,131 @@
           <tbody id="tabelaNotas"></tbody>
         </table>
       </div>
-      <p>Total: <span id="total"></span></p>
+      <div id="total-container">
+        <strong>Total de Notas:</strong> <span id="totalNotas">0</span> |
+        <strong>Valor Bruto Total:</strong> R$ <span id="totalValor">0,00</span>
+      </div>
     </div>
   </div>
- <script>
-  let dados = [];
 
-  async function carregarDados() {
-    const url = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRrclG6V0hZ6mUJAP5J5zwZPi4Qfw-NJjjk0apARx1Kk-KROKenmVdHx4yZW3reeC23sp7ChUZOZKhy/pub?output=csv';
-    try {
-      const resposta = await fetch(url);
-      if (!resposta.ok) {
-        throw new Error(`Erro ao carregar dados: ${resposta.statusText} (Status: ${resposta.status})`);
+  <script>
+    let dados = [];
+
+    async function carregarDados() {
+      const url = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRrclG6V0hZ6mUJAP5J5zwZPi4Qfw-NJjjk0apARx1Kk-KROKenmVdHx4yZW3reeC23sp7ChUZOZKhy/pub?output=csv';
+      try {
+        const resposta = await fetch(url);
+        if (!resposta.ok) throw new Error('Erro ao carregar dados.');
+
+        const texto = await resposta.text();
+        const linhas = texto.split('\n').filter(linha => linha.trim() !== '');
+        if (linhas.length === 0) return;
+
+        const cabecalhos = linhas[0].split(',');
+        dados = linhas.slice(1).map(linha => {
+          const colunas = linha.split(',');
+          return cabecalhos.reduce((obj, cab, i) => {
+            obj[cab.trim()] = colunas[i]?.trim() || '';
+            return obj;
+          }, {});
+        });
+
+        exibirDados(dados);
+      } catch (e) {
+        console.error(e);
+        document.getElementById('tabelaNotas').innerHTML = `<tr><td colspan="12" class="center-align" style="color:red;">Erro ao carregar os dados.</td></tr>`;
       }
+    }
 
-      const texto = await resposta.text();
-      const linhas = texto.split('\n').filter(linha => linha.trim() !== '');
+    function limparValorNumerico(val) {
+      if (!val) return 0;
+      let limpo = val.replace(/"/g, '').replace(/\./g, '').replace(/,/g, '.');
+      let num = parseFloat(limpo);
+      return isNaN(num) ? 0 : num;
+    }
 
-      if (linhas.length === 0) {
-        document.getElementById('total').textContent = '0';
+    function formatarNumeroBR(numero) {
+      return numero.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function exibirDados(lista) {
+      const tabela = document.getElementById('tabelaNotas');
+      tabela.innerHTML = '';
+
+      if (lista.length === 0) {
+        tabela.innerHTML = `<tr><td colspan="12" class="center-align">Nenhum resultado encontrado para os filtros.</td></tr>`;
+        atualizarTotal(0, 0);
         return;
       }
 
-      const cabecalhos = linhas[0].split(',');
-      dados = linhas.slice(1).map(linha => {
-        const colunas = linha.split(',');
-        return cabecalhos.reduce((obj, cab, i) => {
-          obj[cab.trim()] = colunas[i]?.trim();
-          return obj;
-        }, {});
-      });
-
-      exibirDados(dados);
-    } catch (error) {
-      console.error("Erro ao carregar ou processar os dados:", error);
-      document.getElementById('tabelaNotas').innerHTML = '<tr><td colspan="13" style="text-align:center; color:red;">Erro ao carregar os dados. Verifique a URL da planilha e a conexão.</td></tr>';
-      document.getElementById('total').textContent = 'Erro';
-    }
-  }
-
-  function exibirDados(lista) {
-    const tabela = document.getElementById('tabelaNotas');
-    tabela.innerHTML = '';
-
-    const limparValorNumerico = (val) => {
-      if (typeof val !== 'string' || !val) return val;
-      const limpo = val.replace(/"/g, '').replace(/\./g, '').replace(/,/g, '.');
-      return isNaN(limpo) ? val : Number(limpo);
-    };
-
-    const formatarNumeroBR = (numero) => {
-      if (typeof numero !== 'number') {
-        const parsed = parseFloat(String(numero).replace(/\./g, '').replace(/,/g, '.'));
-        if (isNaN(parsed)) return numero;
-        numero = parsed;
-      }
-      return numero.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    };
-
-    if (lista.length === 0) {
-      tabela.innerHTML = '<tr><td colspan="13" style="text-align:center;">Nenhum resultado encontrado para os filtros.</td></tr>';
-    } else {
+      let somaValor = 0;
       lista.forEach(item => {
+        const peso = limparValorNumerico(item['Peso Brut']);
+        const valor = limparValorNumerico(item['Val. Brut']);
+        somaValor += valor;
+
         const linha = document.createElement('tr');
         linha.innerHTML = `
-          <td><button onclick="alert('Visualizar NF ${item['Nota'] || ''}')">Ver</button></td>
+          <td><button onclick="alert('Visualizar NF ${item['Nota']}')">Ver</button></td>
           <td>${item['Nota'] || ''}</td>
           <td>${item['DT Saída'] || ''}</td>
           <td>${item['Dt Chegada'] || ''}</td>
-          <td>${item['DT Previsão'] || ''}</td>
           <td>${item['Prev. Entrega'] || ''}</td>
           <td>${item['Ocorrência da Nota'] || ''}</td>
           <td>${item['Cod.Cliente'] || ''}</td>
           <td>${item['Razão Social'] || ''}</td>
           <td>${item['Cidade'] || ''}</td>
           <td>${item['UF'] || ''}</td>
-          <td>${formatarNumeroBR(limparValorNumerico(item['Peso Brut']))}</td>
-          <td>${formatarNumeroBR(limparValorNumerico(item['Val. Brut']))}</td>
+          <td class="right-align">${formatarNumeroBR(peso)}</td>
+          <td class="right-align">${formatarNumeroBR(valor)}</td>
         `;
         tabela.appendChild(linha);
       });
+
+      atualizarTotal(lista.length, somaValor);
     }
 
-    document.getElementById('total').textContent = lista.length;
-  }
+    function atualizarTotal(totalNotas, totalValor) {
+      document.getElementById('totalNotas').textContent = totalNotas;
+      document.getElementById('totalValor').textContent = formatarNumeroBR(totalValor);
+    }
 
-  function filterData() {
-    const nota = document.getElementById('notaFilter').value.trim();
-    const uf = document.getElementById('ufFilter').value.trim().toUpperCase();
-    const start = document.getElementById('startDate').value;
-    const end = document.getElementById('endDate').value;
+    function filterData() {
+      const nota = document.getElementById('notaFilter').value.trim();
+      const uf = document.getElementById('ufFilter').value.trim().toUpperCase();
+      const start = document.getElementById('startDate').value;
+      const end = document.getElementById('endDate').value;
 
-    const filtrado = dados.filter(item => {
-      const dtSaidaParts = item['DT Saída']?.split('/');
-      const dtSaida = dtSaidaParts?.length === 3 ? `${dtSaidaParts[2]}-${dtSaidaParts[1]}-${dtSaidaParts[0]}` : '';
-      let dataValida = true;
+      const filtrado = dados.filter(item => {
+        // Converter datas para padrão ISO (YYYY-MM-DD) para comparar
+        let dtSaidaISO = '';
+        if (item['DT Saída']) {
+          const parts = item['DT Saída'].split('/');
+          if (parts.length === 3) dtSaidaISO = `${parts[2]}-${parts[1].padStart(2,'0')}-${parts[0].padStart(2,'0')}`;
+        }
 
-      if (start) dataValida = dataValida && (dtSaida >= start);
-      if (end) dataValida = dataValida && (dtSaida <= end);
+        let dataValida = true;
+        if (start) dataValida = dataValida && dtSaidaISO >= start;
+        if (end) dataValida = dataValida && dtSaidaISO <= end;
 
-      const notaValida = !nota || item['Nota'] === nota;
-      const ufValida = !uf || item['UF'] === uf;
+        const notaValida = !nota || item['Nota'] === nota;
+        const ufValida = !uf || item['UF'] === uf;
 
-      return dataValida && notaValida && ufValida;
-    });
+        return dataValida && notaValida && ufValida;
+      });
 
-    exibirDados(filtrado);
-  }
+      exibirDados(filtrado);
+    }
 
-  function clearFilters() {
-    document.getElementById('notaFilter').value = '';
-    document.getElementById('ufFilter').value = '';
-    document.getElementById('startDate').value = '';
-    document.getElementById('endDate').value = '';
-    exibirDados(dados);
-  }
+    function clearFilters() {
+      document.getElementById('notaFilter').value = '';
+      document.getElementById('ufFilter').value = '';
+      document.getElementById('startDate').value = '';
+      document.getElementById('endDate').value = '';
+      exibirDados(dados);
+    }
 
-  window.onload = carregarDados;
-</script>
+    window.onload = carregarDados;
+  </script>
 </body>
 </html>
