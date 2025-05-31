@@ -3,6 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- ADICIONE DENTRO DO <head> -->
+  <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
   <title>Consulta Notas Fiscais</title>
   <style>
     html, body {
@@ -95,7 +99,8 @@
     <div class="sidebar">
       <h3>Coco do Vale</h3>
       <ul style="list-style: none; padding-left: 0; font-size: 12px;">
-        <li>NF-e</li>
+        <li>NF-e</li><br>
+        <li>Cargas Fabrica</li>
       </ul>
     </div>
     <div class="content">
@@ -107,9 +112,12 @@
         <input type="text" id="ufFilter" placeholder="UF" />
         <button onclick="filterData()">Pesquisar</button>
         <button onclick="clearFilters()">Limpar</button>
+        <button onclick="exportarTabelaParaExcel()">📤 Exportar para Excel</button>
+
       </div>
       <div class="table-wrapper">
-        <table>
+       <!-- ALTERE a tag da tabela para incluir um ID (necessário para exportar): -->
+      <table id="minhaTabela">
           <thead>
             <tr>
               <th>Ações</th>
@@ -196,13 +204,12 @@
 
       let somaValor = 0;
       lista.forEach(item => {
-        const peso = limparValorNumerico(item['Peso Brut']);
         const valor = limparValorNumerico(item['Val. Brut']);
         somaValor += valor;
 
         const linha = document.createElement('tr');
         linha.innerHTML = `
-          <td><button onclick="alert('Nota: ${item['Nota'] || ''}\\nCliente: ${item['Razão Social'] || ''}\\nCidade/UF: ${item['Cidade']}\\nValor Bruto: ${item['Val.Brut'] || ''}')">Ver</button></td>
+            <td><button onclick="alert('Nota: ${item['Nota'] || ''}\\nCliente: ${item['Razão Social'] || ''}\\nCidade: ${item['Cidade']}\\nValor Bruto: ${item['Val.Brut'] || ''}')">Ver</button></td>
             <td>${item['Nota'] || ''}</td>
             <td>${item['DT Emissão'] || ''}</td>
             <td>${item['DT Saída'] || ''}</td>
@@ -262,6 +269,31 @@
     }
 
     window.onload = carregarDados;
+
+    function exportarTabelaParaExcel() {
+      const tabela = document.getElementById("minhaTabela");
+      if (!tabela) {
+        alert("Tabela não encontrada!");
+        return;
+      }
+      const workbook = XLSX.utils.table_to_book(tabela, { sheet: "Planilha1" });
+      XLSX.writeFile(workbook, "dados_exportados.xlsx");
+    }
   </script>
+    <!-- ADICIONE AO FINAL DO BODY (antes de </body>) -->
+  <script>
+  function exportarTabelaParaExcel() {
+    const tabela = document.getElementById("minhaTabela");
+
+    if (!tabela) {
+      alert("Tabela não encontrada!");
+      return;
+    }
+
+    const workbook = XLSX.utils.table_to_book(tabela, { sheet: "Notas Fiscais" });
+    XLSX.writeFile(workbook, "Notas_Fiscais.xlsx");
+  }
+</script>
+
 </body>
 </html>
