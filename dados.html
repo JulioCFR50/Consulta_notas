@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <!-- ADICIONE DENTRO DO <head> -->
+  <!-- As bibliotecas seguem iguais ao seu original -->
   <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
@@ -94,6 +94,7 @@
     }
   </style>
 </head>
+
 <body>
   <div class="container">
     <div class="sidebar">
@@ -106,41 +107,53 @@
     <div class="content">
       <h2>Notas Fiscais</h2>
       <div class="filter-group">
+        <!-- Filtros originais de Emissão, NF e UF -->
         <label>Emissão de: <input type="date" id="startDate" /></label>
         <label>Até: <input type="date" id="endDate" /></label>
         <input type="text" id="notaFilter" placeholder="NF" />
         <input type="text" id="ufFilter" placeholder="UF" />
+
+        <!-- NOVO filtro por data de Previsão -->
+        <label>Previsão de: <input type="date" id="startPrev" /></label>
+        <label>Até: <input type="date" id="endPrev" /></label>
+
+        <!-- Botões -->
         <button onclick="filterData()">Pesquisar</button>
         <button onclick="clearFilters()">Limpar</button>
         <button onclick="exportarTabelaParaExcel()">📤 Exportar para Excel</button>
-
       </div>
+
       <div class="table-wrapper">
-       <!-- ALTERE a tag da tabela para incluir um ID (necessário para exportar): -->
-      <table id="minhaTabela">
+        <!-- A tabela, com cabeçalho incluindo “Ações” -->
+        <table id="minhaTabela">
           <thead>
             <tr>
               <th>Ações</th>
               <th>Nota</th>
               <th>DT Emissão</th>
               <th>Dt Saída</th>
+              <th>Dt Chegada</th>
               <th>Dt Redespacho</th>
               <th>Dt Previsão</th>
               <th>Ocorrência da Nota</th>
               <th>Cód.Cliente</th>
               <th>Razão Social</th>
+              <th>Bairro</th>
               <th>Cidade</th>
-              <th>UF</th>            
+              <th>UF</th>
               <th>Val. Brut</th>
             </tr>
           </thead>
           <tbody id="tabelaNotas"></tbody>
         </table>
       </div>
+
       <div id="total-container">
         <strong>Total de Notas:</strong> <span id="totalNotas">0</span> |
-        <strong>Valor Bruto Total:</strong> R$ <span id="totalValor">0,00</span><Br>
-        <strong>Desenvolvido por <em>Julio Cesar</em> </strong>
+        <strong>Valor Bruto Total:</strong> R$ <span id="totalValor">0,00</span><br>
+        <!-- Aqui ficará o total filtrado apenas pela DT Previsão -->
+        <strong>Total por Previsão:</strong> R$ <span id="totalPrev">0,00</span><br>
+        <strong>Desenvolvido por <em>Julio Cesar</em></strong>
       </div>
     </div>
   </div>
@@ -148,17 +161,21 @@
   <script>
     let dados = [];
 
+    // 1) Carrega o CSV do Google Sheets e converte em array de objetos
     async function carregarDados() {
       const url = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRrclG6V0hZ6mUJAP5J5zwZPi4Qfw-NJjjk0apARx1Kk-KROKenmVdHx4yZW3reeC23sp7ChUZOZKhy/pub?output=csv';
       try {
         const resposta = await fetch(url);
         if (!resposta.ok) throw new Error('Erro ao carregar dados.');
-
         const texto = await resposta.text();
+
+        // Divide em linhas e ignora vazias
         const linhas = texto.split('\n').filter(linha => linha.trim() !== '');
         if (linhas.length === 0) return;
 
+        // O cabeçalho (primeira linha) serve de “chave” para cada coluna
         const cabecalhos = linhas[0].split(',');
+
         dados = linhas.slice(1).map(linha => {
           const colunas = linha.split(',');
           return cabecalhos.reduce((obj, cab, i) => {
@@ -167,133 +184,211 @@
           }, {});
         });
 
-        // ORDENAR POR NOTA AQUI
+        // 1.1) Ordena pelo número da Nota (campo “Nota”)
         dados.sort((a, b) => {
-          const notaA = parseInt(a['Nota'] || '0', 10);
-          const notaB = parseInt(b['Nota'] || '0', 10);
-          return notaA - notaB;
+          const na = parseInt(a['Nota'] || '0', 10);
+          const nb = parseInt(b['Nota'] || '0', 10);
+          return na - nb;
         });
 
+        // Exibe tudo logo que o site carrega
         exibirDados(dados);
       } catch (e) {
         console.error(e);
-        document.getElementById('tabelaNotas').innerHTML = `<tr><td colspan="12" class="center-align" style="color:red;">Erro ao carregar os dados.</td></tr>`;
+        document.getElementById('tabelaNotas').innerHTML =
+          `<tr><td colspan="14" class="center-align" style="color:red;">Erro ao carregar os dados.</td></tr>`;
       }
     }
 
+    // 2) Limpa strings de Valor Bruto (ex.: "17.329,52" ou " 17 329,52 ") → número 17329.52
     function limparValorNumerico(val) {
       if (!val) return 0;
-      let limpo = val.replace(/"/g, '').replace(/\./g, '').replace(/,/g, '.');
-      let num = parseFloat(limpo);
+
+      // 2.1) Remove tudo que NÃO seja dígito (0-9) ou vírgula
+      //      Exemplo: "17.329,52" → "17329,52"; " 17 329,52 " (com NBSP) → "17329,52"
+      let somenteDigitosEVirgula = String(val).replace(/[^\d,]/g, '');
+
+      // 2.2) Substitui todas as vírgulas por ponto (para parseFloat)
+      //      Exemplo: "17329,52" → "17329.52"
+      let convertido = somenteDigitosEVirgula.replace(/,/g, '.');
+
+      let num = parseFloat(convertido);
       return isNaN(num) ? 0 : num;
     }
 
+    // 3) Formata número em real pt-BR (ex.: 17329.52 → "17.329,52")
     function formatarNumeroBR(numero) {
-      return numero.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      return numero.toLocaleString('pt-BR', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      });
     }
 
+    // 4) Exibe a lista de objetos (notas) na tabela e calcula Valor Bruto Total
     function exibirDados(lista) {
       const tabela = document.getElementById('tabelaNotas');
       tabela.innerHTML = '';
 
+      // Se nenhum registro bateu nos filtros, mostra mensagem:
       if (lista.length === 0) {
-        tabela.innerHTML = `<tr><td colspan="12" class="center-align">Nenhum resultado encontrado para os filtros.</td></tr>`;
+        tabela.innerHTML =
+          `<tr><td colspan="14" class="center-align">Nenhum resultado encontrado para os filtros.</td></tr>`;
         atualizarTotal(0, 0);
         return;
       }
 
       let somaValor = 0;
-      lista.forEach(item => {
-        const valor = limparValorNumerico(item['Val. Brut']);
-        somaValor += valor;
 
-        const linha = document.createElement('tr');
-        linha.innerHTML = `
-            <td><button onclick="alert('Nota: ${item['Nota'] || ''}\\nCliente: ${item['Razão Social'] || ''}\\nCidade: ${item['Cidade']}\\nValor Bruto: ${item['Val.Brut'] || ''}')">Ver</button></td>
-            <td>${item['Nota'] || ''}</td>
-            <td>${item['DT Emissão'] || ''}</td>
-            <td>${item['DT Saída'] || ''}</td>
-            <td>${item['Dt Chegada'] || ''}</td>
-            <td>${item['DT Previsão'] || ''}</td>
-            <td>${item['Ocorrência da Nota'] || ''}</td>
-            <td>${item['Cod.Cliente'] || ''}</td>
-            <td>${item['Razão Social'] || ''}</td>
-            <td>${item['Cidade'] || ''}</td>
-            <td>${item['UF'] || ''}</td>
-            <td>${formatarNumeroBR(limparValorNumerico(item['Val.Brut'] || item['Val. Brut']))}</td>
-        `;
-        tabela.appendChild(linha);
+      lista.forEach(item => {
+        // 4.1) Extrai o valor bruto (como número) usando a limpeza acima
+        const valorBruto = limparValorNumerico(item['Val. Brut']);
+        somaValor += valorBruto;
+
+        // 4.2) Monta cada <tr> com:
+        //      1ª coluna: botão “Ver” (Ações)
+        //      Demais colunas: campos conforme cabeçalho
+        const tr = document.createElement('tr');
+
+        // Cria a célula do botão
+        const tdBotao = document.createElement('td');
+        const botao = document.createElement('button');
+        botao.textContent = 'Ver';
+        botao.addEventListener('click', () => {
+          alert(
+            'Nota: ' + (item['Nota'] || '') + '\n' +
+            'DT Emissão: ' + (item['DT Emissão'] || '') + '\n' +
+            'DT Saída: ' + (item['DT Saída'] || '') + '\n' +
+            'Dt Previsão: ' + (item['DT Previsão'] || '') + '\n' +
+            'Ocorrência: ' + (item['Ocorrência da Nota'] || '') + '\n' +
+            'Razão Social: ' + (item['Razão Social'] || '') + '\n' +            
+            'Cidade: ' + (item['Cidade'] || '') + '\n' +
+            'UF: ' + (item['UF'] || '') + '\n' +
+            'Val. Brut: ' + (item['Val. Brut'] || '')
+          );
+        });
+        tdBotao.appendChild(botao);
+        tr.appendChild(tdBotao);
+
+        // Adiciona as outras colunas
+        [
+          'Nota', 'DT Emissão', 'DT Saída', 'Dt Chegada', 'Dt Redespacho',
+          'DT Previsão', 'Ocorrência da Nota', 'Cod.Cliente', 'Razão Social',
+          'Bairro', 'Cidade', 'UF'
+        ].forEach(coluna => {
+          const td = document.createElement('td');
+          td.textContent = item[coluna] || '';
+          tr.appendChild(td);
+        });
+
+        // Última coluna: valor formatado
+        const tdValor = document.createElement('td');
+        tdValor.textContent = formatarNumeroBR(valorBruto);
+        tr.appendChild(tdValor);
+
+        // Adiciona a linha à tabela
+        document.getElementById('tabelaNotas').appendChild(tr);
+
       });
 
+      // 4.3) Atualiza o rodapé com total de registros e soma dos valores
       atualizarTotal(lista.length, somaValor);
     }
 
+    // 5) Atualiza “Total de Notas” e “Valor Bruto Total”
     function atualizarTotal(totalNotas, totalValor) {
       document.getElementById('totalNotas').textContent = totalNotas;
       document.getElementById('totalValor').textContent = formatarNumeroBR(totalValor);
     }
 
+    // 6) Filtra por Emissão, NF, UF e PREVISÃO; calcula soma apenas para intervalo de Previsão
     function filterData() {
       const nota = document.getElementById('notaFilter').value.trim();
-      const uf = document.getElementById('ufFilter').value.trim().toUpperCase();
-      const start = document.getElementById('startDate').value;
-      const end = document.getElementById('endDate').value;
+      const uf   = document.getElementById('ufFilter').value.trim().toUpperCase();
+      const start     = document.getElementById('startDate').value;    // Dt Emissão início (YYYY-MM-DD)
+      const end       = document.getElementById('endDate').value;      // Dt Emissão fim   (YYYY-MM-DD)
+      const startPrev = document.getElementById('startPrev').value;    // Dt Previsão início
+      const endPrev   = document.getElementById('endPrev').value;      // Dt Previsão fim
 
+      let somaPrev = 0;
       const filtrado = dados.filter(item => {
-        // Converter datas para padrão ISO (YYYY-MM-DD) para comparar
-        let dtSaidaISO = '';
-        if (item['DT Previsão']) {
-          const parts = item['DT Previsão'].split('/');
-          if (parts.length === 3) dtSaidaISO = `${parts[2]}-${parts[1].padStart(2,'0')}-${parts[0].padStart(2,'0')}`;
+        // 6.1) Converte “DT Emissão” de dd/mm/aaaa → aaaa-mm-dd
+        let dtEmissaoISO = '';
+        if (item['DT Emissão']) {
+          const p = item['DT Emissão'].split('/');
+          if (p.length === 3) {
+            dtEmissaoISO = `${p[2]}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`;
+          }
         }
 
-        let dataValida = true;
-        if (start) dataValida = dataValida && dtSaidaISO >= start;
-        if (end) dataValida = dataValida && dtSaidaISO <= end;
+        // 6.2) Converte “DT Previsão” de dd/mm/aaaa → aaaa-mm-dd
+        let dtPrevISO = '';
+        if (item['DT Previsão']) {
+          const pp = item['DT Previsão'].split('/');
+          if (pp.length === 3) {
+            dtPrevISO = `${pp[2]}-${pp[1].padStart(2,'0')}-${pp[0].padStart(2,'0')}`;
+          }
+        }
 
+        // 6.3) Inicializa flags como true
+        let emissaoValida  = true;
+        let previsaoValida = true;
+
+        // Filtro de data de emissão
+        if (start)      emissaoValida  = emissaoValida  && (dtEmissaoISO >= start);
+        if (end)        emissaoValida  = emissaoValida  && (dtEmissaoISO <= end);
+
+        // Filtro de data de previsão
+        if (startPrev)  previsaoValida = previsaoValida && (dtPrevISO >= startPrev);
+        if (endPrev)    previsaoValida = previsaoValida && (dtPrevISO <= endPrev);
+
+        // Filtros adicionais: NF e UF
         const notaValida = !nota || item['Nota'] === nota;
-        const ufValida = !uf || item['UF'] === uf;
+        const ufValida   = !uf   || item['UF']   === uf;
 
-        return dataValida && notaValida && ufValida;
+        const todosValidos = emissaoValida && previsaoValida && notaValida && ufValida;
+
+        // 6.4) Se passar em todos os filtros e estiver no intervalo de PREVISÃO,
+        //      acumula o “Val. Brut” para o “Total por Previsão”
+        if (todosValidos && startPrev && endPrev &&
+            dtPrevISO >= startPrev && dtPrevISO <= endPrev) {
+          somaPrev += limparValorNumerico(item['Val. Brut']);
+        }
+
+        return todosValidos;
       });
 
+      // 6.5) Exibe o total filtrado pela Previsão
+      document.getElementById('totalPrev').textContent = formatarNumeroBR(somaPrev);
+
+      // 6.6) Exibe as linhas filtradas
       exibirDados(filtrado);
     }
 
+    // 7) Limpa todos os filtros e retorna a tabela completa
     function clearFilters() {
-      document.getElementById('notaFilter').value = '';
-      document.getElementById('ufFilter').value = '';
       document.getElementById('startDate').value = '';
-      document.getElementById('endDate').value = '';
+      document.getElementById('endDate').value   = '';
+      document.getElementById('notaFilter').value = '';
+      document.getElementById('ufFilter').value   = '';
+      document.getElementById('startPrev').value  = '';
+      document.getElementById('endPrev').value    = '';
+      document.getElementById('totalPrev').textContent = '0,00';
       exibirDados(dados);
     }
 
-    window.onload = carregarDados;
-
+    // 8) Exporta a tabela (filtrada ou não) para um arquivo Excel
     function exportarTabelaParaExcel() {
       const tabela = document.getElementById("minhaTabela");
       if (!tabela) {
         alert("Tabela não encontrada!");
         return;
       }
-      const workbook = XLSX.utils.table_to_book(tabela, { sheet: "Planilha1" });
-      XLSX.writeFile(workbook, "dados_exportados.xlsx");
+      const workbook = XLSX.utils.table_to_book(tabela, { sheet: "Notas Fiscais" });
+      XLSX.writeFile(workbook, "Notas_Fiscais.xlsx");
     }
+
+    // 9) Quando a página carrega, busca os dados e exibe tudo
+    window.onload = carregarDados;
   </script>
-    <!-- ADICIONE AO FINAL DO BODY (antes de </body>) -->
-  <script>
-  function exportarTabelaParaExcel() {
-    const tabela = document.getElementById("minhaTabela");
-
-    if (!tabela) {
-      alert("Tabela não encontrada!");
-      return;
-    }
-
-    const workbook = XLSX.utils.table_to_book(tabela, { sheet: "Notas Fiscais" });
-    XLSX.writeFile(workbook, "Notas_Fiscais.xlsx");
-  }
-</script>
-
 </body>
 </html>
