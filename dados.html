@@ -242,8 +242,8 @@
       const filtrado = dados.filter(item => {
         // Converter datas para padrão ISO (YYYY-MM-DD) para comparar
         let dtSaidaISO = '';
-        if (item['DT Saída']) {
-          const parts = item['DT Saída'].split('/');
+        if (item['DT Previsão']) {
+          const parts = item['DT Previsão'].split('/');
           if (parts.length === 3) dtSaidaISO = `${parts[2]}-${parts[1].padStart(2,'0')}-${parts[0].padStart(2,'0')}`;
         }
 
