@@ -22,7 +22,7 @@
          }
          .container {
          display: flex;
-         height: 100vh;
+         height: 100vh;         
          }
          .sidebar {
          width: 5%;
@@ -91,11 +91,9 @@
          text-overflow: ellipsis;  /* adiciona '...' quando o texto for cortado */
          white-space: nowrap;      /* evita quebra de linha */
          }
-
-       table tbody tr td:nth-child(13) {
-          text-align: right;
-        }
-                
+         table tbody tr td:nth-child(13) {
+         text-align: right;
+         }
          .right-align {
          text-align: right;
          }
@@ -106,16 +104,16 @@
          margin-top: 10px;
          font-size: 14px;
          }
-        .input-pequeno {
-          width: 80px; /* ajuste conforme necessário */
-          font-size: 14px; /* opcional, para diminuir o texto */
-          padding: 4px;    /* opcional, para controlar o espaço interno */
-        }
-        .input-grande {
-          width: 250px;     /* aumenta a largura */
-          font-size: 18px;  /* aumenta o texto */
-          padding: 8px;     /* aumenta o espaçamento interno */
-        }
+         .input-pequeno {
+         width: 80px; /* ajuste conforme necessário */
+         font-size: 14px; /* opcional, para diminuir o texto */
+         padding: 4px;    /* opcional, para controlar o espaço interno */
+         }
+         .input-grande {
+         width: 250px;     /* aumenta a largura */
+         font-size: 18px;  /* aumenta o texto */
+         padding: 8px;     /* aumenta o espaçamento interno */
+         }
       </style>
    </head>
    <body>
@@ -331,9 +329,9 @@
           const startPrev   = document.getElementById('startPrev').value;    // Dt Previsão início
           const endPrev     = document.getElementById('endPrev').value;      // Dt Previsão fim
           const razaoSocialFilter = document.getElementById('razaoSocialFilter').value.trim().toLowerCase();
-
+         
           let somaPrev = 0;
-
+         
           const filtrado = dados.filter(item => {
             // Converte DT Emissão de dd/mm/aaaa para aaaa-mm-dd
             let dtEmissaoISO = '';
@@ -343,7 +341,7 @@
                 dtEmissaoISO = `${partes[2]}-${partes[1].padStart(2, '0')}-${partes[0].padStart(2, '0')}`;
               }
             }
-
+         
             // Converte DT Previsão de dd/mm/aaaa para aaaa-mm-dd
             let dtPrevISO = '';
             if (item['DT Previsão']) {
@@ -352,67 +350,67 @@
                 dtPrevISO = `${partesPrev[2]}-${partesPrev[1].padStart(2, '0')}-${partesPrev[0].padStart(2, '0')}`;
               }
             }
-
+         
             // Flags iniciais
             let emissaoValida  = true;
             let previsaoValida = true;
-
+         
             // Filtros de data de emissão
             if (start) emissaoValida = emissaoValida && (dtEmissaoISO >= start);
             if (end)   emissaoValida = emissaoValida && (dtEmissaoISO <= end);
-
+         
             // Filtros de data de previsão
             if (startPrev) previsaoValida = previsaoValida && (dtPrevISO >= startPrev);
             if (endPrev)   previsaoValida = previsaoValida && (dtPrevISO <= endPrev);
-
+         
             // Filtros por nota, UF e razão social
             const notaValida  = !nota || item['Nota'] === nota;
             const ufValida    = !uf   || item['UF'] === uf;
             const razaoValida = !razaoSocialFilter || 
               (item['Razão Social'] && item['Razão Social'].toLowerCase().includes(razaoSocialFilter));
-
+         
             const todosValidos = emissaoValida && previsaoValida && notaValida && ufValida && razaoValida;
-
+         
             // Soma valor bruto se passar por todos os filtros e estiver no intervalo de previsão
             if (todosValidos && startPrev && endPrev && dtPrevISO >= startPrev && dtPrevISO <= endPrev) {
               somaPrev += limparValorNumerico(item['Val. Brut']);
             }
-
+         
             return todosValidos;
           });
-
+         
           // Atualiza total da previsão
           document.getElementById('totalPrev').textContent = formatarNumeroBR(somaPrev);
-
-      // 6.6) Exibe as linhas filtradas
-      exibirDados(filtrado);
-    }
-
-    // 7) Limpa todos os filtros e retorna a tabela completa
-    function clearFilters() {
-      document.getElementById('startDate').value = '';
-      document.getElementById('endDate').value   = '';
-      document.getElementById('notaFilter').value = '';
-      document.getElementById('ufFilter').value   = '';
-      document.getElementById('startPrev').value  = '';
-      document.getElementById('endPrev').value    = '';
-      document.getElementById('totalPrev').textContent = '0,00';
-      exibirDados(dados);
-    }
-
-    // 8) Exporta a tabela (filtrada ou não) para um arquivo Excel
-    function exportarTabelaParaExcel() {
-      const tabela = document.getElementById("minhaTabela");
-      if (!tabela) {
-        alert("Tabela não encontrada!");
-        return;
-      }
-      const workbook = XLSX.utils.table_to_book(tabela, { sheet: "Notas Fiscais" });
-      XLSX.writeFile(workbook, "Notas_Fiscais.xlsx");
-    }
-
-    // 9) Quando a página carrega, busca os dados e exibe tudo
-    window.onload = carregarDados;
-  </script>
-</body>
+         
+         // 6.6) Exibe as linhas filtradas
+         exibirDados(filtrado);
+         }
+         
+         // 7) Limpa todos os filtros e retorna a tabela completa
+         function clearFilters() {
+         document.getElementById('startDate').value = '';
+         document.getElementById('endDate').value   = '';
+         document.getElementById('notaFilter').value = '';
+         document.getElementById('ufFilter').value   = '';
+         document.getElementById('startPrev').value  = '';
+         document.getElementById('endPrev').value    = '';
+         document.getElementById('totalPrev').textContent = '0,00';
+         exibirDados(dados);
+         }
+         
+         // 8) Exporta a tabela (filtrada ou não) para um arquivo Excel
+         function exportarTabelaParaExcel() {
+         const tabela = document.getElementById("minhaTabela");
+         if (!tabela) {
+         alert("Tabela não encontrada!");
+         return;
+         }
+         const workbook = XLSX.utils.table_to_book(tabela, { sheet: "Notas Fiscais" });
+         XLSX.writeFile(workbook, "Notas_Fiscais.xlsx");
+         }
+         
+         // 9) Quando a página carrega, busca os dados e exibe tudo
+         window.onload = carregarDados;
+      </script>
+   </body>
 </html>
