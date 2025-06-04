@@ -18,12 +18,14 @@
       overflow: hidden;
     }
 
-     #tabelaDados {
-    font-size: 8px; /* diminui para 8 pixels, pode ajustar para o tamanho que quiser */
+    #tabelaDados {
+    font-size: 8px;
+    text-align: center; /* diminui para 8 pixels, pode ajustar para o tamanho que quiser */
   }
     .container {
       display: flex;
       height: 100vh;
+      
     }
     .sidebar {
       width: 5%;
@@ -87,7 +89,7 @@
       text-align: left;
     }
 
-    td {
+    td, tr {
       max-width: 200px;         /* define largura máxima da coluna */
       overflow: hidden;         /* esconde o excesso */
       text-overflow: ellipsis;  /* adiciona '...' quando o texto for cortado */
@@ -145,7 +147,6 @@
               <th>DT Emissão</th>
               <th>Dt Saída</th>
               <th>Dt Chegada</th>
-              <th>Dt Redespacho</th>
               <th>Dt Previsão</th>
               <th>Ocorrência da Nota</th>
               <th>Cód.Cliente</th>
@@ -283,8 +284,7 @@
 
         // Adiciona as outras colunas
         [
-          'Nota', 'DT Emissão', 'DT Saída', 'Dt Chegada', 'Dt Redespacho',
-          'DT Previsão', 'Ocorrência da Nota', 'Cod.Cliente', 'Razão Social',
+          'Nota', 'DT Emissão', 'DT Saída', 'Dt Chegada','DT Previsão', 'Ocorrência da Nota', 'Cod.Cliente', 'Razão Social',
           'Bairro', 'Cidade', 'UF'
         ].forEach(coluna => {
           const td = document.createElement('td');
