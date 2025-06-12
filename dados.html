@@ -6,6 +6,7 @@
       <!-- As bibliotecas seguem iguais ao seu original -->
       <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
       <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+      <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
       <title>Consulta Notas Fiscais</title>
       <style>
          html, body {
@@ -182,44 +183,30 @@
          
          // 1) Carrega o CSV do Google Sheets e converte em array de objetos
          async function carregarDados() {
-           const url = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRrclG6V0hZ6mUJAP5J5zwZPi4Qfw-NJjjk0apARx1Kk-KROKenmVdHx4yZW3reeC23sp7ChUZOZKhy/pub?output=csv';
-           try {
-             const resposta = await fetch(url);
-             if (!resposta.ok) throw new Error('Erro ao carregar dados.');
-             const texto = await resposta.text();
+         const url = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRrclG6V0hZ6mUJAP5J5zwZPi4Qfw-NJjjk0apARx1Kk-KROKenmVdHx4yZW3reeC23sp7ChUZOZKhy/pub?output=csv';
          
-             // Divide em linhas e ignora vazias
-             const linhas = texto.split('\n').filter(linha => linha.trim() !== '');
-             if (linhas.length === 0) return;
+         try {
+         const resposta = await fetch(url);
+         const texto = await resposta.text();
          
-             // O cabeçalho (primeira linha) serve de “chave” para cada coluna
-             const cabecalhos = linhas[0].split(',');
+         const resultado = Papa.parse(texto, {
+         header: true,
+         skipEmptyLines: true,
+         });
          
-             dados = linhas.slice(1).map(linha => {
-               const colunas = linha.split(',');
-               return cabecalhos.reduce((obj, cab, i) => {
-                 obj[cab.trim()] = colunas[i]?.trim() || '';
-                 return obj;
-               }, {});
-             });
+         dados = resultado.data;
          
-             // 1.1) Ordena pelo número da Nota (campo “Nota”)
-             dados.sort((a, b) => {
-               const na = parseInt(a['Nota'] || '0', 10);
-               const nb = parseInt(b['Nota'] || '0', 10);
-               return na - nb;
-             });
+         // ordena pela nota
+         dados.sort((a, b) => parseInt(a['Nota'] || '0', 10) - parseInt(b['Nota'] || '0', 10));
          
-             // Exibe tudo logo que o site carrega
-             exibirDados(dados);
-           } catch (e) {
-             console.error(e);
-             document.getElementById('tabelaNotas').innerHTML =
-               `<tr><td colspan="14" class="center-align" style="color:red;">Erro ao carregar os dados.</td></tr>`;
-           }
-         
-           
+         exibirDados(dados);
+         } catch (e) {
+         console.error(e);
+         document.getElementById('tabelaNotas').innerHTML =
+         `<tr><td colspan="14" class="center-align" style="color:red;">Erro ao carregar os dados.</td></tr>`;
          }
+         }
+         
          
          // 2) Limpa strings de Valor Bruto (ex.: "17.329,52" ou " 17 329,52 ") → número 17329.52
          function limparValorNumerico(val) {
