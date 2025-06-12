@@ -375,15 +375,17 @@
          
          // 7) Limpa todos os filtros e retorna a tabela completa
          function clearFilters() {
-         document.getElementById('startDate').value = '';
-         document.getElementById('endDate').value   = '';
-         document.getElementById('notaFilter').value = '';
-         document.getElementById('ufFilter').value   = '';
-         document.getElementById('startPrev').value  = '';
-         document.getElementById('endPrev').value    = '';
-         document.getElementById('totalPrev').textContent = '0,00';
-         exibirDados(dados);
-         }
+          document.getElementById('startDate').value = '';
+          document.getElementById('endDate').value = '';
+          document.getElementById('notaFilter').value = '';
+          document.getElementById('ufFilter').value = '';
+          document.getElementById('razaoSocialFilter').value = ''; // ✅ esta linha faltava
+          document.getElementById('startPrev').value = '';
+          document.getElementById('endPrev').value = '';
+          document.getElementById('totalPrev').textContent = '0,00';
+          exibirDados(dados);
+        }
+
          
          // 8) Exporta a tabela (filtrada ou não) para um arquivo Excel
          function exportarTabelaParaExcel() {
