@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+   <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1" />
+      <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+      <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+      <title>Consulta de Cargas</title>
+      <style>
+         body {
+         margin: 0;
+         padding: 0;
+         height: 100%;
+         background: #f5f5f5;
+         font-family: Arial, sans-serif;
+         }
+         .container {
+         display: flex;
+         min-height: 100vh;
+         }
+         .sidebar {
+         width: 5%;
+         background: #1e2d3b;
+         color: #e5f8ff;
+         padding: 10px;
+         box-sizing: border-box;
+         position: fixed;
+         top: 0;
+         left: 0;
+         bottom: 0;
+         overflow-y: auto;
+         }
+         .content {
+         margin-left: 5%;
+         width: 95%;
+         padding: 20px;
+         display: flex;
+         flex-direction: column;        
+         height: 100vh;
+         }
+         .table-wrapper {
+         flex: 1;
+         overflow-y: auto;
+         }
+         #total-container {
+         font-size: 12px;
+         background: #fff;
+         padding: 10px;
+         border-top: 1px solid #ccc;
+         position: sticky;
+         bottom: 0;
+         z-index: 10;
+         }
+         thead th {
+         position: sticky;
+         top: 0;
+         background: #f2f2f2;
+         z-index: 5;
+         }
+         table {
+         width: 100%;
+         border-collapse: collapse;
+         background: white;
+         }
+         th,
+         td {
+         border: 1px solid #ccc;
+         padding: 4px 6px;
+         font-size: 10px;
+         text-align: center;
+         }
+         th {
+         background: #f2f2f2;
+         }
+         .filter-group select,
+         .filter-group input {
+         padding: 2px 4px;
+         font-size: 11px;
+         max-width: 120px;
+         }
+         .filter-group {
+         display: flex;
+         flex-wrap: wrap;
+         align-items: center;
+         gap: 6px;
+         background: white;
+         padding: 8px;
+         border-bottom: 1px solid #ccc;
+         position: sticky;
+         top: 0;
+         z-index: 10;
+         }
+         .filter-group label {
+         font-size: 11px;
+         display: flex;
+         align-items: center;
+         gap: 4px;
+         white-space: nowrap;
+         }
+         .right-align {
+         text-align: right;
+         }
+         h3 {
+         display: block;
+         margin-block-start: 1em;
+         margin-block-end: 1em;
+         margin-inline-start: 0px;
+         margin-inline-end: 0px;
+         font-weight: bold;
+         unicode-bidi: isolate;
+         }
+         label {
+         font-size: 12px;
+         font-weight: bold;
+         }
+      </style>
+   </head>
+   <body>
+      <div class="container">
+         <div class="sidebar">
+            <h3>Coco do Vale</h3>
+            <ul style="list-style: none; padding: 0; font-size: 12px">
+               <li>
+                  <a href="dados.html" style="color: white; text-decoration: none"
+                     >NF-e</a
+                     >
+               </li>
+               <br />
+               <li><a>Cargas Fábrica</a></li>
+            </ul>
+         </div>
+         <div class="content">
+            <h2>Cargas Fábrica</h2>
+            <div class="filter-group">
+               <label>
+                  Transportadora:
+                  <select id="transportadoraFilter">
+                     <option value="">Todas</option>
+                  </select>
+               </label>
+               <label>
+                  Destino:
+                  <select id="destinoFilter">
+                     <option value="">Todos</option>
+                  </select>
+               </label>
+               <label>
+               Dt Envio Carga:
+               <input type="date" id="startEnvio" />
+               <input type="date" id="endEnvio" />
+               </label>
+               <label>
+                  Status:
+                  <select id="statusFilter">
+                     <option value="">Todos</option>
+                  </select>
+               </label>
+               <label>
+                  Tipo Carga:
+                  <select id="tipoCargaFilter">
+                     <option value="">Todos</option>
+                  </select>
+               </label>
+               <label>
+               Prev./Agenda:
+               <input type="date" id="startPrev" />
+               <input type="date" id="endPrev" />
+               </label>
+               <button onclick="aplicarFiltros()">Filtrar</button>
+               <button onclick="limparFiltros()">Limpar</button>
+               <button onclick="exportarTabelaParaExcel()">Excel</button>
+            </div>
+            <div class="table-wrapper">
+               <table id="minhaTabela">
+                  <thead>
+                     <tr>
+                        <th>Ações</th>
+                        <th>Romaneio</th>
+                        <th>Dt Envio Carga</th>
+                        <th>Dt Prev. Coleta</th>
+                        <th>Dt Chegada Fábrica</th>
+                        <th>Dt Saída Fábrica</th>
+                        <th>Status</th>
+                        <th>Transportadora</th>
+                        <th>Destino</th>
+                        <th>Prev./Agenda</th>
+                        <th>Dt Entrega</th>
+                        <th>Tipo Carga</th>
+                        <th>Status Entrega</th>
+                        <th>Valor</th>
+                     </tr>
+                  </thead>
+                  <tbody id="tabelaCargas"></tbody>
+               </table>
+            </div>
+            <div id="total-container">
+               <strong>Total de Cargas:</strong> <span id="totalCargas">0</span> |
+               <strong>Valor Bruto Total:</strong> R$
+               <span id="totalValor">0,00</span><br />
+               <strong>Total por Previsão:</strong> R$
+               <span id="totalPrev">0,00</span><br />
+               <Em>Desenvolvido por Julio Cesar</em>
+            </div>
+         </div>
+      </div>
+      <script>
+         let dados = [];
+         
+         async function carregarDados() {
+           const sheetUrl =
+             "https://docs.google.com/spreadsheets/d/e/2PACX-1vSgEiMKW_OgJUf0MgLF922h4c1glZgzDrw49UtO4YOcyxEUl7Fle4S_G_tYKpiyurAGZVKiLUXYTh1t/pub?gid=1209620475&single=true&output=csv";
+           const proxy = "https://corsproxy.io/?" + encodeURIComponent(sheetUrl);
+         
+           try {
+             const txt = await fetch(proxy).then((r) => r.text());
+         
+             if (txt.startsWith("<!DOCTYPE html>")) {
+               throw new Error("A URL não retornou um CSV válido.");
+             }
+         
+             dados = Papa.parse(txt, { header: true, skipEmptyLines: true }).data;
+         
+             preencherFiltros(dados);
+             exibirDados(dados);
+           } catch (e) {
+             console.error(e);
+             document.getElementById("tabelaCargas").innerHTML =
+               "<tr><td colspan='14' style='text-align:center;color:red;'>Erro ao carregar os dados.</td></tr>";
+           }
+         }
+         
+         function limparVal(v) {
+           if (!v) return 0;
+           const cleaned = v.replace(/\./g, "").replace(",", ".");
+           const num = parseFloat(cleaned);
+           return isNaN(num) ? 0 : num;
+         }
+         
+         function fmtBR(n) {
+           return n.toLocaleString("pt-BR", {
+             minimumFractionDigits: 2,
+             maximumFractionDigits: 2,
+           });
+         }
+         
+         function preencherFiltros(list) {
+           const a = new Set(),
+             b = new Set(),
+             c = new Set(),
+             d = new Set();
+           list.forEach((i) => {
+             a.add(i["Transportadora"]);
+             b.add(i["Destino"]);
+             c.add(i["Status"]);
+             d.add(i["Tipo Carga"]);
+           });
+           ["transportadora", "destino", "status", "tipoCarga"].forEach((id) => {
+             const sel = document.getElementById(id + "Filter");
+             [
+               ...(id === "transportadora"
+                 ? a
+                 : id === "destino"
+                 ? b
+                 : id === "status"
+                 ? c
+                 : d),
+             ]
+               .filter((x) => x)
+               .forEach((x) => {
+                 const o = document.createElement("option");
+                 o.value = x;
+                 o.textContent = x;
+                 sel.appendChild(o);
+               });
+           });
+         }
+         
+         function aplicarFiltros() {
+             const t = document.getElementById("transportadoraFilter").value;
+             const dest = document.getElementById("destinoFilter").value;
+             const status = document.getElementById("statusFilter").value;
+             const tipo = document.getElementById("tipoCargaFilter").value;
+         
+             const s = document.getElementById("startPrev").value;
+             const e = document.getElementById("endPrev").value;
+         
+             const envioStart = document.getElementById("startEnvio").value;
+             const envioEnd = document.getElementById("endEnvio").value;
+         
+             const filt = dados.filter((i) => {
+               const agenda = i["Prev./Agenda"]?.split("/").reverse().join("-");
+               const envio = i["Dt Envio Carga"]?.split("/").reverse().join("-");
+         
+               return (
+                 (!t || i["Transportadora"] === t) &&
+                 (!dest || i["Destino"] === dest) &&
+                 (!status || i["Status"] === status) &&
+                 (!tipo || i["Tipo Carga"] === tipo) &&
+                 (!s || agenda >= s) &&
+                 (!e || agenda <= e) &&
+                 (!envioStart || envio >= envioStart) &&
+                 (!envioEnd || envio <= envioEnd)
+               );
+             });
+         
+             exibirDados(filt);
+           }
+         
+         
+         function limparFiltros() {
+             [
+               "transportadoraFilter",
+               "destinoFilter",
+               "statusFilter",
+               "tipoCargaFilter",
+               "startPrev",
+               "endPrev",
+               "startEnvio",
+               "endEnvio"
+             ].forEach((id) => (document.getElementById(id).value = ""));
+             exibirDados(dados);
+           }
+         
+         
+         function exibirDados(list) {
+           const tb = document.getElementById("tabelaCargas");
+           tb.innerHTML = "";
+           let soma = 0;
+         
+           list.forEach((item) => {
+             const v = limparVal(item["Valor"]);
+             soma += v;
+         
+             const tr = document.createElement("tr");
+             tr.innerHTML = `
+               <td><button onclick="alert('Romaneio: ${item["Romaneio"]}')">Ver</button></td>
+               <td>${item["Romaneio"]}</td>
+               <td>${item["Dt Envio Carga"]}</td>
+               <td>${item["Dt Prev. Coleta"]}</td>
+               <td>${item["Dt. Chegada na Fábrica"]}</td>
+               <td>${item["Dt Saída da Fábrica"]}</td>
+               <td>${item["Status"]}</td>
+               <td>${item["Transportadora"]}</td>
+               <td>${item["Destino"]}</td>
+               <td>${item["Prev./Agenda"]}</td>
+               <td>${item["Dt Entrega"]}</td>
+               <td>${item["Tipo Carga"]}</td>
+               <td>${item["Status de Entrega"]}</td>
+               <td class="right-align">${fmtBR(v)}</td>
+             `;
+             tb.appendChild(tr);
+           });
+         
+           document.getElementById("totalCargas").textContent = list.length;
+           document.getElementById("totalValor").textContent = fmtBR(soma);
+           calcularPrev(list);
+         }
+         
+         function calcularPrev(list) {
+           const s = document.getElementById("startPrev").value;
+           const e = document.getElementById("endPrev").value;
+           const f = list.filter((i) => {
+             const d = i["Prev./Agenda"]?.split("/").reverse().join("-");
+             return (!s || d >= s) && (!e || d <= e);
+           });
+           const sp = f.reduce((acc, i) => acc + limparVal(i["Valor"]), 0);
+           document.getElementById("totalPrev").textContent = fmtBR(sp);
+         }
+         
+         function exportarTabelaParaExcel() {
+           const wb = XLSX.utils.table_to_book(
+             document.getElementById("minhaTabela")
+           );
+           XLSX.writeFile(wb, "Cargas_Fabrica.xlsx");
+         }
+         
+         window.onload = carregarDados;
+      </script>
+   </body>
+</html>
