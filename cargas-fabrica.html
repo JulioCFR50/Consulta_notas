@@ -20,10 +20,12 @@
       .container {
         display: flex;
         min-height: 100vh;
+        justify-content: space-between;
+        flex-wrap: wrap;
       }
       .sidebar {
         width: 5%;
-        background: #1e2d3b;
+        background: #10dee6;
         color: #e5f8ff;
         padding: 10px;
         box-sizing: border-box;
@@ -34,12 +36,15 @@
         overflow-y: auto;
       }
       .content {
-        margin-left: 5%;
-        width: 95%;
-        padding: 20px;
+        flex: 1;
+        padding: 10px;
         display: flex;
         flex-direction: column;
-        height: 100vh;
+        overflow: hidden;
+        width: 95%;
+        height: 98vh;
+        margin-left: 5%;
+        padding: 10px;
       }
       .table-wrapper {
         flex: 1;
@@ -116,6 +121,30 @@
         font-size: 12px;
         font-weight: bold;
       }
+       @media (max-width: 768px) {
+         /* Container flexível para caber na tela pequena */
+         .container {
+         flex-wrap: wrap; /* permite a sidebar e content ficarem em linhas separadas */
+         height: auto;    /* para evitar overflow vertical */
+         }
+         /* Sidebar ocupa toda a largura no celular, para não sobrepor */
+         .sidebar {
+         width: 100% !important;
+         font-size: 10px; /* tamanho menor, mas pode ajustar */
+         padding: 8px;
+         }
+         }
+         @media (max-width: 768px) {
+         .sidebar {
+         display: none !important;
+         }
+         .content {
+         width: 100% !important;
+         }
+         }
+         .filter-group {
+         flex-direction:row
+         }          
     </style>
   </head>
   <body>
@@ -334,9 +363,7 @@
 
           const tr = document.createElement("tr");
           tr.innerHTML = `
-               <td><button onclick="alert('Romaneio: ${
-                 item["Romaneio"]
-               }')">Ver</button></td>
+               <td><button onclick="alert('Romaneio: ${item["Romaneio"]}')">Ver</button></td>
                <td>${item["Romaneio"]}</td>
                <td>${item["Dt Envio Carga"]}</td>
                <td>${item["Dt Prev. Coleta"]}</td>
