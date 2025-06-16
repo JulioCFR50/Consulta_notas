@@ -194,15 +194,16 @@
                         <th>Prev./Agenda</th>
                         <th>Dt Entrega</th>
                         <th>Tipo Carga</th>
-                        <th>Status Entrega</th>
+                        <th>Status Entrega</th>                        
                         <th>Valor</th>
+                        <th>Peso</th>
                      </tr>
                   </thead>
                   <tbody id="tabelaCargas"></tbody>
                </table>
             </div>
             <div id="total-container">
-               <strong>Total de Cargas:</strong> <span id="totalCargas">0</span> |
+               <strong>Total de Cargas:</strong> <span id="totalCargas">0</span>                
                <strong>Valor Bruto Total:</strong> R$
                <span id="totalValor">0,00</span><br />
                <strong>Total por Previsão:</strong> R$
@@ -334,35 +335,43 @@
            const tb = document.getElementById("tabelaCargas");
            tb.innerHTML = "";
            let soma = 0;
+           let pesoTotal = 0;
+
          
            list.forEach((item) => {
              const v = limparVal(item["Valor"]);
+             const p = limparVal(item["Peso"]);
              soma += v;
          
              const tr = document.createElement("tr");
-             tr.innerHTML = `
-               <td><button onclick="alert('Romaneio: ${item["Romaneio"]}')">Ver</button></td>
-               <td>${item["Romaneio"]}</td>
-               <td>${item["Dt Envio Carga"]}</td>
-               <td>${item["Dt Prev. Coleta"]}</td>
-               <td>${item["Dt. Chegada na Fábrica"]}</td>
-               <td>${item["Dt Saída da Fábrica"]}</td>
-               <td>${item["Status"]}</td>
-               <td>${item["Transportadora"]}</td>
-               <td>${item["Destino"]}</td>
-               <td>${item["Prev./Agenda"]}</td>
-               <td>${item["Dt Entrega"]}</td>
-               <td>${item["Tipo Carga"]}</td>
-               <td>${item["Status de Entrega"]}</td>
-               <td class="right-align">${fmtBR(v)}</td>
-             `;
+              tr.innerHTML = `
+                <td><button onclick="alert('Romaneio: ${item["Romaneio"]}')">Ver</button></td>
+                <td>${item["Romaneio"]}</td>
+                <td>${item["Dt Envio Carga"]}</td>
+                <td>${item["Dt Prev. Coleta"]}</td>
+                <td>${item["Dt. Chegada na Fábrica"]}</td>
+                <td>${item["Dt Saída da Fábrica"]}</td>
+                <td>${item["Status"]}</td>
+                <td>${item["Transportadora"]}</td>
+                <td>${item["Destino"]}</td>
+                <td>${item["Prev./Agenda"]}</td>
+                <td>${item["Dt Entrega"]}</td>
+                <td>${item["Tipo Carga"]}</td>
+                <td>${item["Status de Entrega"]}</td>
+                <td class="right-align">${fmtBR(v)}</td>
+                <td class="right-align">${fmtBR(p)}</td>
+              `;
              tb.appendChild(tr);
            });
          
            document.getElementById("totalCargas").textContent = list.length;
-           document.getElementById("totalValor").textContent = fmtBR(soma);
+           document.getElementById("totalValor").textContent = fmtBR(soma);            
+           
+           
            calcularPrev(list);
+          
          }
+         
          
          function calcularPrev(list) {
            const s = document.getElementById("startPrev").value;
@@ -396,7 +405,7 @@
          const dateCols = [3, 4, 5, 6, 10, 11];
          
          // Coluna com valores numéricos (ex: Valor Bruto): 14ª coluna → índice 13
-         const numberCols = [13];
+         const numberCols = [13, 14];
          
          for (let R = range.s.r + 1; R <= range.e.r; ++R) {
          for (let C = range.s.c; C <= range.e.c; ++C) {
