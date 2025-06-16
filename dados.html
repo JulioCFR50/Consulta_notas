@@ -213,8 +213,7 @@
          document.getElementById('tabelaNotas').innerHTML =
          `<tr><td colspan="14" class="center-align" style="color:red;">Erro ao carregar os dados.</td></tr>`;
          }
-         }
-         
+         }         
          
          // 2) Limpa strings de Valor Bruto (ex.: "17.329,52" ou " 17 329,52 ") → número 17329.52
          function limparValorNumerico(val) {
@@ -395,63 +394,77 @@
          }
          
          // 8) Exporta a tabela (filtrada ou não) para um arquivo Excel
-        
-       document.addEventListener("DOMContentLoaded", () => {
-  carregarDados();
-});
-
-function exportarTabelaParaExcel() {
-  try {
-    const tabela = document.getElementById("minhaTabela");
-    if (!tabela) {
-      alert("Tabela não encontrada!");
-      return;
-    }
-
-    const wb = XLSX.utils.book_new();
-    const ws_data = [];
-
-    const dateCols = [2, 3, 4, 5]; // Colunas de data (índice zero-based)
-
-    const linhas = tabela.querySelectorAll("tr");
-    linhas.forEach(linha => {
-      const row = [];
-      linha.querySelectorAll("th, td").forEach((coluna, index) => {
-        const valor = coluna.textContent.trim();
-
-        // Se for data no formato dd/mm/yyyy
-        if (dateCols.includes(index) && /^\d{2}\/\d{2}\/\d{4}$/.test(valor)) {
+         
+         document.addEventListener("DOMContentLoaded", () => {
+         carregarDados();
+         });
+         
+         function exportarTabelaParaExcel() {
+         try {
+         const tabela = document.getElementById("minhaTabela");
+         if (!tabela) {
+         alert("Tabela não encontrada!");
+         return;
+         }
+         
+         const wb = XLSX.utils.book_new();
+         const ws_data = [];
+         
+         const dateCols = [2, 3, 4, 5];  // Colunas de data (índices zero-based)
+         const numberCols = [12];       // Coluna de valor numérico (ex: coluna 13 visualmente)
+         
+         const linhas = tabela.querySelectorAll("tr");
+         linhas.forEach(linha => {
+         const row = [];
+         linha.querySelectorAll("th, td").forEach((coluna, index) => {
+         const valor = coluna.textContent.trim();
+         
+         // Se for data no formato dd/mm/yyyy
+         if (dateCols.includes(index) && /^\d{2}\/\d{2}\/\d{4}$/.test(valor)) {
           const [dd, mm, aaaa] = valor.split("/");
           row.push(new Date(`${aaaa}-${mm}-${dd}`));
-        } else {
-          row.push(valor); // mantém texto exatamente como está, inclusive números com , ou .
-        }
-      });
-      ws_data.push(row);
-    });
-
-    const ws = XLSX.utils.aoa_to_sheet(ws_data);
-
-    // Corrige tipo das células de data
-    const range = XLSX.utils.decode_range(ws["!ref"]);
-    for (let R = range.s.r + 1; R <= range.e.r; ++R) {
-      for (let C of dateCols) {
-        const ref = XLSX.utils.encode_cell({ r: R, c: C });
-        const cell = ws[ref];
-        if (!cell || !(cell.v instanceof Date)) continue;
-        cell.t = "d";
-        cell.z = "dd/mm/yyyy";
-      }
-    }
-
-    XLSX.utils.book_append_sheet(wb, ws, "Notas Fiscais");
-    XLSX.writeFile(wb, "Notas_Fiscais.xlsx");
-  } catch (erro) {
-    console.error("Erro na exportação:", erro);
-    alert("Erro ao exportar a planilha. Veja o console para detalhes.");
-  }
-}
-
+         }
+         // Se for número no padrão pt-BR (1.234,56)
+         else if (numberCols.includes(index) && /^\d{1,3}(?:\.\d{3})*,\d{2}$/.test(valor)) {
+          const numero = parseFloat(valor.replace(/\./g, "").replace(",", "."));
+          row.push(isNaN(numero) ? valor : numero);
+         }
+         else {
+          row.push(valor); // mantém texto exatamente como está
+         }
+         });
+         ws_data.push(row);
+         });
+         
+         const ws = XLSX.utils.aoa_to_sheet(ws_data);
+         
+         // Corrige tipo das células de data e número
+         const range = XLSX.utils.decode_range(ws["!ref"]);
+         for (let R = range.s.r + 1; R <= range.e.r; ++R) {
+         for (let C = range.s.c; C <= range.e.c; ++C) {
+         const ref = XLSX.utils.encode_cell({ r: R, c: C });
+         const cell = ws[ref];
+         if (!cell) continue;
+         
+         if (dateCols.includes(C) && cell.v instanceof Date) {
+          cell.t = "d";
+          cell.z = "dd/mm/yyyy";
+         }
+         else if (numberCols.includes(C) && typeof cell.v === "number") {
+          cell.t = "n";
+          cell.z = "#,##0.00";
+         }
+         }
+         }
+         
+         XLSX.utils.book_append_sheet(wb, ws, "Notas Fiscais");
+         XLSX.writeFile(wb, "Notas_Fiscais.xlsx");
+         } catch (erro) {
+         console.error("Erro na exportação:", erro);
+         alert("Erro ao exportar a planilha. Veja o console para detalhes.");
+         }
+         }
+         
       </script>
    </body>
 </html>
