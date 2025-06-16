@@ -2,9 +2,11 @@
 <html lang="pt-br">
    <head>
       <meta charset="UTF-8" />
+      <meta http-equiv="X-UA-Compatible" content="IE=edge">
       <meta name="viewport" content="width=device-width, initial-scale=1" />
-      <!-- As bibliotecas seguem iguais ao seu original -->
-      <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+      <meta name="description" content="Pagina de consulta de notas">
+      <meta name="author" content="Julio Cesar">
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
       <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
       <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
       <title>Consulta Notas Fiscais</title>
@@ -45,7 +47,6 @@
          width: 95%;
          height: 98vh;
          }
-
          .filter-group {
          display: flex;
          gap: 10px;
@@ -85,18 +86,16 @@
          z-index: 1;
          }
          th, td {
-          padding: 4px 6px;
-          border: 1px solid #ccc;
-          text-align: left;
-        }
-
-        td, tr {
-      max-width: 200px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
+         padding: 4px 6px;
+         border: 1px solid #ccc;
+         text-align: left;
+         }
+         td, tr {
+         max-width: 200px;
+         overflow: hidden;
+         text-overflow: ellipsis;
+         white-space: nowrap;
+         }
          table tbody tr td:nth-child(13) {
          text-align: right;
          }
@@ -129,15 +128,14 @@
    </head>
    <body>
       <div class="container">
-        <div class="sidebar">
-          <h3>Coco do Vale</h3>
-          <ul style="list-style: none; padding-left: 0; font-size: 12px;">
-            <li>NF-e</li>
-            <br />
-            <li><a href="cargas-fabrica.html" style="color: white; text-decoration: none;">Cargas Fabrica</a></li>
-          </ul>
-        </div>
-
+         <div class="sidebar">
+            <h3>Coco do Vale</h3>
+            <ul style="list-style: none; padding-left: 0; font-size: 12px;">
+               <li>NF-e</li>
+               <br />
+               <li><a href="cargas-fabrica.html" style="color: white; text-decoration: none;">Cargas Fabrica</a></li>
+            </ul>
+         </div>
          <div class="content">
             <h2>Notas Fiscais</h2>
             <div class="filter-group">
@@ -394,22 +392,66 @@
           document.getElementById('endPrev').value = '';
           document.getElementById('totalPrev').textContent = '0,00';
           exibirDados(dados);
-        }
-
+         }
          
          // 8) Exporta a tabela (filtrada ou não) para um arquivo Excel
-         function exportarTabelaParaExcel() {
-         const tabela = document.getElementById("minhaTabela");
-         if (!tabela) {
-         alert("Tabela não encontrada!");
-         return;
-         }
-         const workbook = XLSX.utils.table_to_book(tabela, { sheet: "Notas Fiscais" });
-         XLSX.writeFile(workbook, "Notas_Fiscais.xlsx");
-         }
-         
-         // 9) Quando a página carrega, busca os dados e exibe tudo
-         window.onload = carregarDados;
+        
+       document.addEventListener("DOMContentLoaded", () => {
+  carregarDados();
+});
+
+function exportarTabelaParaExcel() {
+  try {
+    const tabela = document.getElementById("minhaTabela");
+    if (!tabela) {
+      alert("Tabela não encontrada!");
+      return;
+    }
+
+    const wb = XLSX.utils.book_new();
+    const ws_data = [];
+
+    const dateCols = [2, 3, 4, 5]; // Colunas de data (índice zero-based)
+
+    const linhas = tabela.querySelectorAll("tr");
+    linhas.forEach(linha => {
+      const row = [];
+      linha.querySelectorAll("th, td").forEach((coluna, index) => {
+        const valor = coluna.textContent.trim();
+
+        // Se for data no formato dd/mm/yyyy
+        if (dateCols.includes(index) && /^\d{2}\/\d{2}\/\d{4}$/.test(valor)) {
+          const [dd, mm, aaaa] = valor.split("/");
+          row.push(new Date(`${aaaa}-${mm}-${dd}`));
+        } else {
+          row.push(valor); // mantém texto exatamente como está, inclusive números com , ou .
+        }
+      });
+      ws_data.push(row);
+    });
+
+    const ws = XLSX.utils.aoa_to_sheet(ws_data);
+
+    // Corrige tipo das células de data
+    const range = XLSX.utils.decode_range(ws["!ref"]);
+    for (let R = range.s.r + 1; R <= range.e.r; ++R) {
+      for (let C of dateCols) {
+        const ref = XLSX.utils.encode_cell({ r: R, c: C });
+        const cell = ws[ref];
+        if (!cell || !(cell.v instanceof Date)) continue;
+        cell.t = "d";
+        cell.z = "dd/mm/yyyy";
+      }
+    }
+
+    XLSX.utils.book_append_sheet(wb, ws, "Notas Fiscais");
+    XLSX.writeFile(wb, "Notas_Fiscais.xlsx");
+  } catch (erro) {
+    console.error("Erro na exportação:", erro);
+    alert("Erro ao exportar a planilha. Veja o console para detalhes.");
+  }
+}
+
       </script>
    </body>
 </html>

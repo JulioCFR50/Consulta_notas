@@ -2,7 +2,10 @@
 <html lang="pt-br">
    <head>
       <meta charset="UTF-8" />
+      <meta http-equiv="X-UA-Compatible" content="IE=edge">
       <meta name="viewport" content="width=device-width, initial-scale=1" />
+      <meta name="description" content="Pagina de consulta de cargas">
+      <meta name="author" content="Julio Cesar">
       <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
       <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
       <title>Consulta de Cargas</title>
@@ -17,6 +20,11 @@
          .container {
          display: flex;
          min-height: 100vh;
+         }
+
+         .sidebar h3 {
+         font-size: 12px;
+         margin-top: 0;
          }
          .sidebar {
          width: 5%;
@@ -62,8 +70,7 @@
          border-collapse: collapse;
          background: white;
          }
-         th,
-         td {
+         th,td {
          border: 1px solid #ccc;
          padding: 4px 6px;
          font-size: 10px;
@@ -108,6 +115,7 @@
          margin-inline-end: 0px;
          font-weight: bold;
          unicode-bidi: isolate;
+         font-size: 12px;
          }
          label {
          font-size: 12px;
@@ -166,7 +174,7 @@
                <input type="date" id="startPrev" />
                <input type="date" id="endPrev" />
                </label>
-               <button onclick="aplicarFiltros()">Filtrar</button>
+               <button onclick="aplicarFiltros()">Pesquisar</button>
                <button onclick="limparFiltros()">Limpar</button>
                <button onclick="exportarTabelaParaExcel()">Excel</button>
             </div>
