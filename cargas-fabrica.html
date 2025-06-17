@@ -9,14 +9,14 @@
       <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
       <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
       <title>Consulta Coco do Vale</title>
-       <style>
+      <style>
          body {
          margin: 0;
          padding: 0;
          height: 100%;
          background: #f5f5f5;
          font-family: Arial, sans-serif;
-          overflow: hidden;
+         overflow: hidden;
          }
          .container {
          display: flex;
@@ -75,7 +75,6 @@
          border-collapse: collapse;
          background: white;
          }
-         
          th,td {
          border: 1px solid #ccc;
          padding: 4px 6px;
@@ -238,7 +237,7 @@
                         <th>Prev./Agenda</th>
                         <th>Dt Entrega</th>
                         <th>Tipo Carga</th>
-                        <th>Status Entrega</th>                        
+                        <th>Status Entrega</th>
                         <th>Valor</th>
                         <th>Peso</th>
                      </tr>
@@ -247,7 +246,6 @@
                </table>
             </div>
             <div id="total-container">
-
                <strong>Total de Cargas:</strong> <span id="totalCargas" style="color: red;">0</span>             
                <strong>Valor Bruto Total:</strong> R$
                <span id="totalValor" style="color: red;">0,00</span><br />
@@ -384,30 +382,48 @@
          
          
            list.forEach((item) => {
-             const v = limparVal(item["Valor"]);
-             const p = limparVal(item["Peso"]);
-             soma += v;
+         const v = limparVal(item["Valor"]);
+         const p = limparVal(item["Peso"]);
+         soma += v;
          
-             const tr = document.createElement("tr");
-              tr.innerHTML = `
-                <td><button onclick="alert('Romaneio: ${item["Romaneio"]}')">Ver</button></td>
-                <td>${item["Romaneio"]}</td>
-                <td>${item["Dt Envio Carga"]}</td>
-                <td>${item["Dt Prev. Coleta"]}</td>
-                <td>${item["Dt. Chegada na Fábrica"]}</td>
-                <td>${item["Dt Saída da Fábrica"]}</td>
-                <td>${item["Status"]}</td>
-                <td>${item["Transportadora"]}</td>
-                <td>${item["Destino"]}</td>
-                <td>${item["Prev./Agenda"]}</td>
-                <td>${item["Dt Entrega"]}</td>
-                <td>${item["Tipo Carga"]}</td>
-                <td>${item["Status de Entrega"]}</td>
-                <td class="right-align">${fmtBR(v)}</td>
-                <td class="right-align">${fmtBR(p)}</td>
-              `;
-             tb.appendChild(tr);
-           });
+         const tr = document.createElement("tr");
+         tr.innerHTML = `
+         <td>
+         <button onclick="verDetalhes(this)"
+         data-romaneio="${item["Romaneio"] || ''}"
+         data-transportadora="${item["Transportadora"] || ''}"
+         data-envio="${item["Dt Envio Carga"] || ''}"
+         data-prevcoleta="${item["Dt Prev. Coleta"] || ''}"
+         data-chegada="${item["Dt. Chegada na Fábrica"] || ''}"
+         data-saida="${item["Dt Saída da Fábrica"] || ''}"
+         data-status="${item["Status"] || ''}"
+         data-destino="${item["Destino"] || ''}"
+         data-prevagenda="${item["Prev./Agenda"] || ''}"
+         data-entrega="${item["Dt Entrega"] || ''}"
+         data-tipocarga="${item["Tipo Carga"] || ''}"
+         data-statusentrega="${item["Status de Entrega"] || ''}"
+         data-valor="${fmtBR(v)}"
+         data-peso="${fmtBR(p)}"
+         >Ver</button>
+         </td>
+         <td>${item["Romaneio"]}</td>
+         <td>${item["Dt Envio Carga"]}</td>
+         <td>${item["Dt Prev. Coleta"]}</td>
+         <td>${item["Dt. Chegada na Fábrica"]}</td>
+         <td>${item["Dt Saída da Fábrica"]}</td>
+         <td>${item["Status"]}</td>
+         <td>${item["Transportadora"]}</td>
+         <td>${item["Destino"]}</td>
+         <td>${item["Prev./Agenda"]}</td>
+         <td>${item["Dt Entrega"]}</td>
+         <td>${item["Tipo Carga"]}</td>
+         <td>${item["Status de Entrega"]}</td>
+         <td class="right-align">${fmtBR(v)}</td>
+         <td class="right-align">${fmtBR(p)}</td>
+         `;
+         tb.appendChild(tr);
+         });
+         
          
            document.getElementById("totalCargas").textContent = list.length;
            document.getElementById("totalValor").textContent = fmtBR(soma);            
@@ -488,9 +504,33 @@
          console.error("Erro na exportação:", erro);
          alert("Erro ao exportar. Veja o console para detalhes.");
          }
-         }         
+         }
+         
+         function verDetalhes(botao) {
+         const d = botao.dataset;
+         
+         const mensagem = `
+         Romaneio: ${d.romaneio}
+         Transportadora: ${d.transportadora}
+         Dt Envio Carga: ${d.envio}
+         Dt Prev. Coleta: ${d.prevcoleta}
+         Dt Chegada na Fábrica: ${d.chegada}
+         Dt Saída da Fábrica: ${d.saida}
+         Status: ${d.status}
+         Destino: ${d.destino}
+         Prev./Agenda: ${d.prevagenda}
+         Dt Entrega: ${d.entrega}
+         Tipo Carga: ${d.tipocarga}
+         Status de Entrega: ${d.statusentrega}
+         Valor: ${d.valor}
+         Peso: ${d.peso}
+         `;
+         
+         alert(mensagem);
+         }
+         
          window.onload = carregarDados;   
-       
+         
       </script>
    </body>
 </html>
