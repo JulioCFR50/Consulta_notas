@@ -23,7 +23,6 @@
          font-size: 8px;
          text-align: center; 
          }
-         
          .container {
          display: flex;
          height: 100vh;
@@ -65,15 +64,28 @@
          }
          .filter-group input[type="text"],
          .filter-group input[type="date"] {
-         font-size: 12px;
-         padding: 2px 4px;
-         height: 20px;
+         font-size: 10px;
+         padding: 1px 3px;
+         height: 18px;
+         box-sizing: border-box;
          }
          .filter-group button {
-         font-size: 12px;
-         padding: 4px 8px;
-         cursor: pointer;
-         }
+  font-size: 10px;         /* Fonte menor para compactar */
+  padding: 1px 5px;        /* Pouco espaço interno, altura menor */
+  height: 20px;            /* Altura fixa do botão */
+  line-height: 18px;       /* Alinha verticalmente o texto dentro do botão */
+  cursor: pointer;         /* Cursor mãozinha no hover */
+  box-sizing: border-box;  /* Padding e borda dentro da altura definida */
+  border-radius: 3px;      /* (Opcional) bordas arredondadas para visual moderno */
+  border: 1px solid #ccc;  /* (Opcional) borda leve para destacar botão */
+  background-color: #f0f0f0; /* (Opcional) cor de fundo suave */
+  transition: background-color 0.2s ease; /* (Opcional) transição suave ao passar o mouse */
+}
+
+.filter-group button:hover {
+  background-color: #ddd;  /* (Opcional) muda cor ao passar o mouse */
+}
+
          .table-wrapper {
          flex: 1;
          overflow-y: auto;
@@ -83,7 +95,10 @@
          table {
          width: 100%;
          border-collapse: collapse;
-         font-size: 12px;
+         font-size: 10px;
+         }
+         table tbody {
+         font-size: 10px; /* ou outro tamanho que desejar */
          }
          thead {
          position: sticky;
@@ -105,7 +120,7 @@
          .center-align {
          text-align: center;         
          }
-          table tbody tr td:nth-child(13) {
+         table tbody tr td:nth-child(13) {
          text-align: right;
          }
          #total-container {
@@ -141,24 +156,23 @@
          .filter-group {
          flex-direction:row
          }   
-          .top-right-logo {
-  position: fixed;
-  top: 10px;
-  right: 15px;
-  z-index: 100;
-}
-
-.logo-direita {
-  height: 50px;
-}       
+         .top-right-logo {
+         position: fixed;
+         top: 10px;
+         right: 15px;
+         z-index: 100;
+         }
+         .logo-direita {
+         height: 50px;
+         }       
       </style>
    </head>
    <body>
-    <div class="top-right-logo">
-  <a href="cargas-fabrica.html">
-    <img src="./Imagens/2023.png" alt="Logo" class="logo-direita">
-  </a>
-</div>
+      <div class="top-right-logo">
+         <a href="cargas-fabrica.html" target="_blank">
+         <img src="./Imagens/2023.png" alt="Logo" class="logo-direita">
+         </a>
+      </div>
       <div class="container">
          <div class="sidebar">
             <h3>Coco do Vale</h3>
@@ -177,6 +191,7 @@
                <input type="text" class="input-pequeno" id="notaFilter" placeholder="NF" />
                <input type="text" class="input-pequeno" id="ufFilter" placeholder="UF" />
                <input type="text" class="input-grande" id="razaoSocialFilter" placeholder="Razão Social" />               
+               <input type="text" class="input-pequeno" id="codClienteFilter" placeholder="Cód.Cliente" />
                <!-- NOVO filtro por data de Previsão -->
                <label>Previsão de: <input type="date" id="startPrev" /></label>
                <label>Até: <input type="date" id="endPrev" /></label>
@@ -223,278 +238,252 @@
          
          // 1) Carrega o CSV do Google Sheets e converte em array de objetos
          async function carregarDados() {
-         const url = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRrclG6V0hZ6mUJAP5J5zwZPi4Qfw-NJjjk0apARx1Kk-KROKenmVdHx4yZW3reeC23sp7ChUZOZKhy/pub?output=csv';
-         
-         try {
-         const resposta = await fetch(url);
-         const texto = await resposta.text();
-         
-         const resultado = Papa.parse(texto, {
-         header: true,
-         skipEmptyLines: true,
-         });
-         
-         dados = resultado.data;
-         
-         // ordena pela nota
-         dados.sort((a, b) => parseInt(a['Nota'] || '0', 10) - parseInt(b['Nota'] || '0', 10));
-         
-         exibirDados(dados);
-         } catch (e) {
-         console.error(e);
-         document.getElementById('tabelaNotas').innerHTML =
-         `<tr><td colspan="14" class="center-align" style="color:red;">Erro ao carregar os dados.</td></tr>`;
-         }
+            const url = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRrclG6V0hZ6mUJAP5J5zwZPi4Qfw-NJjjk0apARx1Kk-KROKenmVdHx4yZW3reeC23sp7ChUZOZKhy/pub?output=csv';
+            
+            try {
+               const resposta = await fetch(url);
+               const texto = await resposta.text();
+               
+               const resultado = Papa.parse(texto, {
+                  header: true,
+                  skipEmptyLines: true,
+               });
+               
+               dados = resultado.data;
+               
+               // ordena pela nota
+               dados.sort((a, b) => parseInt(a['Nota'] || '0', 10) - parseInt(b['Nota'] || '0', 10));
+               
+               exibirDados(dados);
+            } catch (e) {
+               console.error(e);
+               document.getElementById('tabelaNotas').innerHTML =
+                  `<tr><td colspan="14" class="center-align" style="color:red;">Erro ao carregar os dados.</td></tr>`;
+            }
          }         
          
          // 2) Limpa strings de Valor Bruto (ex.: "17.329,52" ou " 17 329,52 ") → número 17329.52
          function limparValorNumerico(val) {
-           if (!val) return 0;
+            if (!val) return 0;
          
-           // 2.1) Remove tudo que NÃO seja dígito (0-9) ou vírgula
-           //      Exemplo: "17.329,52" → "17329,52"; " 17 329,52 " (com NBSP) → "17329,52"
-           let somenteDigitosEVirgula = String(val).replace(/[^\d,]/g, '');
+            let somenteDigitosEVirgula = String(val).replace(/[^\d,]/g, '');
+            let convertido = somenteDigitosEVirgula.replace(/,/g, '.');
          
-           // 2.2) Substitui todas as vírgulas por ponto (para parseFloat)
-           //      Exemplo: "17329,52" → "17329.52"
-           let convertido = somenteDigitosEVirgula.replace(/,/g, '.');
-         
-           let num = parseFloat(convertido);
-           return isNaN(num) ? 0 : num;
+            let num = parseFloat(convertido);
+            return isNaN(num) ? 0 : num;
          }
          
          // 3) Formata número em real pt-BR (ex.: 17329.52 → "17.329,52")
          function formatarNumeroBR(numero) {
-           return numero.toLocaleString('pt-BR', {
-             minimumFractionDigits: 2,
-             maximumFractionDigits: 2
-           });
+            return numero.toLocaleString('pt-BR', {
+               minimumFractionDigits: 2,
+               maximumFractionDigits: 2
+            });
          }
          
          // 4) Exibe a lista de objetos (notas) na tabela e calcula Valor Bruto Total
          function exibirDados(lista) {
-           const tabela = document.getElementById('tabelaNotas');
-           tabela.innerHTML = '';
+            const tabela = document.getElementById('tabelaNotas');
+            tabela.innerHTML = '';
          
-           // Se nenhum registro bateu nos filtros, mostra mensagem:
-           if (lista.length === 0) {
-             tabela.innerHTML =
-               `<tr><td colspan="14" class="center-align">Nenhum resultado encontrado para os filtros.</td></tr>`;
-             atualizarTotal(0, 0);
-             return;
-           }
+            if (lista.length === 0) {
+               tabela.innerHTML =
+                 `<tr><td colspan="14" class="center-align">Nenhum resultado encontrado para os filtros.</td></tr>`;
+               atualizarTotal(0, 0);
+               return;
+            }
          
-           let somaValor = 0;
+            let somaValor = 0;
          
-           lista.forEach(item => {
-             // 4.1) Extrai o valor bruto (como número) usando a limpeza acima
-             const valorBruto = limparValorNumerico(item['Val. Brut']);
-             somaValor += valorBruto;
+            lista.forEach(item => {
+               const valorBruto = limparValorNumerico(item['Val. Brut']);
+               somaValor += valorBruto;
          
-             // 4.2) Monta cada <tr> com:
-             //      1ª coluna: botão “Ver” (Ações)
-             //      Demais colunas: campos conforme cabeçalho
-             const tr = document.createElement('tr');
+               const tr = document.createElement('tr');
          
-             // Cria a célula do botão
-             const tdBotao = document.createElement('td');
-             const botao = document.createElement('button');
-             botao.textContent = 'Ver';
-             botao.addEventListener('click', () => {
-               alert(
-                 'Nota: ' + (item['Nota'] || '') + '\n' +
-                 'DT Emissão: ' + (item['DT Emissão'] || '') + '\n' +
-                 'DT Saída: ' + (item['DT Saída'] || '') + '\n' +
-                 'Dt Previsão: ' + (item['DT Previsão'] || '') + '\n' +
-                 'Ocorrência: ' + (item['Ocorrência da Nota'] || '') + '\n' +
-                 'Razão Social: ' + (item['Razão Social'] || '') + '\n' +            
-                 'Cidade: ' + (item['Cidade'] || '') + '\n' +
-                 'UF: ' + (item['UF'] || '') + '\n' +
-                 'Val. Brut: ' + (item['Val. Brut'] || '')
-               );
-             });
-             tdBotao.appendChild(botao);
-             tr.appendChild(tdBotao);
+               const tdBotao = document.createElement('td');
+               const botao = document.createElement('button');
+               botao.textContent = 'Ver';
+               botao.addEventListener('click', () => {
+                  alert(
+                     'Nota: ' + (item['Nota'] || '') + '\n' +
+                     'DT Emissão: ' + (item['DT Emissão'] || '') + '\n' +
+                     'DT Saída: ' + (item['DT Saída'] || '') + '\n' +
+                     'Dt Previsão: ' + (item['DT Previsão'] || '') + '\n' +
+                     'Ocorrência: ' + (item['Ocorrência da Nota'] || '') + '\n' +
+                     'Razão Social: ' + (item['Razão Social'] || '') + '\n' +            
+                     'Cidade: ' + (item['Cidade'] || '') + '\n' +
+                     'UF: ' + (item['UF'] || '') + '\n' +
+                     'Val. Brut: ' + (item['Val. Brut'] || '')
+                  );
+               });
+               tdBotao.appendChild(botao);
+               tr.appendChild(tdBotao);
          
-             // Adiciona as outras colunas
-             [
-               'Nota', 'DT Emissão', 'DT Saída', 'Dt Chegada','DT Previsão', 'Ocorrência da Nota', 'Cod.Cliente', 'Razão Social',
-               'Bairro', 'Cidade', 'UF'
-             ].forEach(coluna => {
-               const td = document.createElement('td');
-               td.textContent = item[coluna] || '';
-               tr.appendChild(td);
-             });
+               [
+                 'Nota', 'DT Emissão', 'DT Saída', 'Dt Chegada','DT Previsão', 'Ocorrência da Nota', 'Cod.Cliente', 'Razão Social',
+                 'Bairro', 'Cidade', 'UF'
+               ].forEach(coluna => {
+                 const td = document.createElement('td');
+                 td.textContent = item[coluna] || '';
+                 tr.appendChild(td);
+               });
          
-             // Última coluna: valor formatado
-             const tdValor = document.createElement('td');
-             tdValor.textContent = formatarNumeroBR(valorBruto);
-             tr.appendChild(tdValor);
+               const tdValor = document.createElement('td');
+               tdValor.textContent = formatarNumeroBR(valorBruto);
+               tr.appendChild(tdValor);
          
-             // Adiciona a linha à tabela
-             document.getElementById('tabelaNotas').appendChild(tr);
+               document.getElementById('tabelaNotas').appendChild(tr);
+            });
          
-           });
-         
-           // 4.3) Atualiza o rodapé com total de registros e soma dos valores
-           atualizarTotal(lista.length, somaValor);
+            atualizarTotal(lista.length, somaValor);
          }
          
          // 5) Atualiza “Total de Notas” e “Valor Bruto Total”
          function atualizarTotal(totalNotas, totalValor) {
-           document.getElementById('totalNotas').textContent = totalNotas;
-           document.getElementById('totalValor').textContent = formatarNumeroBR(totalValor);
+            document.getElementById('totalNotas').textContent = totalNotas;
+            document.getElementById('totalValor').textContent = formatarNumeroBR(totalValor);
          }
          
          // 6) Filtra por Emissão, NF, UF e PREVISÃO; calcula soma apenas para intervalo de Previsão
          function filterData() {
-          const nota        = document.getElementById('notaFilter').value.trim();
-          const uf          = document.getElementById('ufFilter').value.trim().toUpperCase();
-          const start       = document.getElementById('startDate').value;    // Dt Emissão início (YYYY-MM-DD)
-          const end         = document.getElementById('endDate').value;      // Dt Emissão fim   (YYYY-MM-DD)
-          const startPrev   = document.getElementById('startPrev').value;    // Dt Previsão início
-          const endPrev     = document.getElementById('endPrev').value;      // Dt Previsão fim
-          const razaoSocialFilter = document.getElementById('razaoSocialFilter').value.trim().toLowerCase();
+            const nota        = document.getElementById('notaFilter').value.trim();
+            const uf          = document.getElementById('ufFilter').value.trim().toUpperCase();
+            const start       = document.getElementById('startDate').value;
+            const end         = document.getElementById('endDate').value;
+            const startPrev   = document.getElementById('startPrev').value;
+            const endPrev     = document.getElementById('endPrev').value;
+            const codClienteFilter = document.getElementById('codClienteFilter').value.trim();
+            const razaoSocialFilter = document.getElementById('razaoSocialFilter').value.trim().toLowerCase();
          
-          let somaPrev = 0;
+            let somaPrev = 0;
          
-          const filtrado = dados.filter(item => {
-            // Converte DT Emissão de dd/mm/aaaa para aaaa-mm-dd
-            let dtEmissaoISO = '';
-            if (item['DT Emissão']) {
-              const partes = item['DT Emissão'].split('/');
-              if (partes.length === 3) {
-                dtEmissaoISO = `${partes[2]}-${partes[1].padStart(2, '0')}-${partes[0].padStart(2, '0')}`;
-              }
-            }
+            const filtrado = dados.filter(item => {
+               let dtEmissaoISO = '';
+               if (item['DT Emissão']) {
+                  const partes = item['DT Emissão'].split('/');
+                  if (partes.length === 3) {
+                     dtEmissaoISO = `${partes[2]}-${partes[1].padStart(2, '0')}-${partes[0].padStart(2, '0')}`;
+                  }
+               }
          
-            // Converte DT Previsão de dd/mm/aaaa para aaaa-mm-dd
-            let dtPrevISO = '';
-            if (item['DT Previsão']) {
-              const partesPrev = item['DT Previsão'].split('/');
-              if (partesPrev.length === 3) {
-                dtPrevISO = `${partesPrev[2]}-${partesPrev[1].padStart(2, '0')}-${partesPrev[0].padStart(2, '0')}`;
-              }
-            }
+               let dtPrevISO = '';
+               if (item['DT Previsão']) {
+                  const partesPrev = item['DT Previsão'].split('/');
+                  if (partesPrev.length === 3) {
+                     dtPrevISO = `${partesPrev[2]}-${partesPrev[1].padStart(2, '0')}-${partesPrev[0].padStart(2, '0')}`;
+                  }
+               }
          
-            // Flags iniciais
-            let emissaoValida  = true;
-            let previsaoValida = true;
+               let emissaoValida  = true;
+               let previsaoValida = true;
          
-            // Filtros de data de emissão
-            if (start) emissaoValida = emissaoValida && (dtEmissaoISO >= start);
-            if (end)   emissaoValida = emissaoValida && (dtEmissaoISO <= end);
+               if (start) emissaoValida = emissaoValida && (dtEmissaoISO >= start);
+               if (end)   emissaoValida = emissaoValida && (dtEmissaoISO <= end);
          
-            // Filtros de data de previsão
-            if (startPrev) previsaoValida = previsaoValida && (dtPrevISO >= startPrev);
-            if (endPrev)   previsaoValida = previsaoValida && (dtPrevISO <= endPrev);
+               if (startPrev) previsaoValida = previsaoValida && (dtPrevISO >= startPrev);
+               if (endPrev)   previsaoValida = previsaoValida && (dtPrevISO <= endPrev);
          
-            // Filtros por nota, UF e razão social
-            const notaValida  = !nota || item['Nota'] === nota;
-            const ufValida    = !uf   || item['UF'] === uf;
-            const razaoValida = !razaoSocialFilter || 
-              (item['Razão Social'] && item['Razão Social'].toLowerCase().includes(razaoSocialFilter));
+               const notaValida  = !nota || item['Nota'] === nota;
+               const ufValida    = !uf   || item['UF'] === uf;
+               const razaoValida = !razaoSocialFilter || 
+                  (item['Razão Social'] && item['Razão Social'].toLowerCase().includes(razaoSocialFilter));
          
-            const todosValidos = emissaoValida && previsaoValida && notaValida && ufValida && razaoValida;
+               const codClienteValido = !codClienteFilter || (item['Cod.Cliente'] && item['Cod.Cliente'].includes(codClienteFilter));
          
-            // Soma valor bruto se passar por todos os filtros e estiver no intervalo de previsão
-            if (todosValidos && startPrev && endPrev && dtPrevISO >= startPrev && dtPrevISO <= endPrev) {
-              somaPrev += limparValorNumerico(item['Val. Brut']);
-            }
+               const todosValidos = emissaoValida && previsaoValida && notaValida && ufValida && razaoValida && codClienteValido;
          
-            return todosValidos;
-          });
+               if (todosValidos && startPrev && endPrev && dtPrevISO >= startPrev && dtPrevISO <= endPrev) {
+                  somaPrev += limparValorNumerico(item['Val. Brut']);
+               }
          
-          // Atualiza total da previsão
-          document.getElementById('totalPrev').textContent = formatarNumeroBR(somaPrev);
+               return todosValidos;
+            });
          
-         // 6.6) Exibe as linhas filtradas
-         exibirDados(filtrado);
+            document.getElementById('totalPrev').textContent = formatarNumeroBR(somaPrev);
+            exibirDados(filtrado);
          }
          
          // 7) Limpa todos os filtros e retorna a tabela completa
          function clearFilters() {
-          document.getElementById('startDate').value = '';
-          document.getElementById('endDate').value = '';
-          document.getElementById('notaFilter').value = '';
-          document.getElementById('ufFilter').value = '';
-          document.getElementById('razaoSocialFilter').value = ''; // ✅ esta linha faltava
-          document.getElementById('startPrev').value = '';
-          document.getElementById('endPrev').value = '';
-          document.getElementById('totalPrev').textContent = '0,00';
-          exibirDados(dados);
+            document.getElementById('startDate').value = '';
+            document.getElementById('endDate').value = '';
+            document.getElementById('notaFilter').value = '';
+            document.getElementById('ufFilter').value = '';
+            document.getElementById('razaoSocialFilter').value = '';
+            document.getElementById('codClienteFilter').value = '';
+            document.getElementById('startPrev').value = '';
+            document.getElementById('endPrev').value = '';
+            document.getElementById('totalPrev').textContent = '0,00';
+            exibirDados(dados);
          }
          
-         
-         // 8) Exporta a tabela (filtrada ou não) para um arquivo Excel
+         // 8) Exporta a tabela para Excel
          document.addEventListener("DOMContentLoaded", () => {
-         carregarDados();
+            carregarDados();
          });
          
          function exportarTabelaParaExcel() {
-         try {
-         const tabela = document.getElementById("minhaTabela");
-         if (!tabela) {
-         alert("Tabela não encontrada!");
-         return;
-         }
+            try {
+               const tabela = document.getElementById("minhaTabela");
+               if (!tabela) {
+                  alert("Tabela não encontrada!");
+                  return;
+               }
          
-         const wb = XLSX.utils.book_new();
-         const ws_data = [];
+               const wb = XLSX.utils.book_new();
+               const ws_data = [];
          
-         const dateCols = [2, 3, 4, 5];  // Colunas de data (índices zero-based)
-         const numberCols = [12];       // Coluna de valor numérico (ex: coluna 13 visualmente)
+               const dateCols = [2, 3, 4, 5];
+               const numberCols = [12];
          
-         const linhas = tabela.querySelectorAll("tr");
-         linhas.forEach(linha => {
-         const row = [];
-         linha.querySelectorAll("th, td").forEach((coluna, index) => {
-         const valor = coluna.textContent.trim();
+               const linhas = tabela.querySelectorAll("tr");
+               linhas.forEach(linha => {
+                  const row = [];
+                  linha.querySelectorAll("th, td").forEach((coluna, index) => {
+                     const valor = coluna.textContent.trim();
          
-         // Se for data no formato dd/mm/yyyy
-         if (dateCols.includes(index) && /^\d{2}\/\d{2}\/\d{4}$/.test(valor)) {
-          const [dd, mm, aaaa] = valor.split("/");
-          row.push(new Date(`${aaaa}-${mm}-${dd}`));
-         }
-         // Se for número no padrão pt-BR (1.234,56)
-         else if (numberCols.includes(index) && /^\d{1,3}(?:\.\d{3})*,\d{2}$/.test(valor)) {
-          const numero = parseFloat(valor.replace(/\./g, "").replace(",", "."));
-          row.push(isNaN(numero) ? valor : numero);
-         }
-         else {
-          row.push(valor); // mantém texto exatamente como está
-         }
-         });
-         ws_data.push(row);
-         });
+                     if (dateCols.includes(index) && /^\d{2}\/\d{2}\/\d{4}$/.test(valor)) {
+                        const [dd, mm, aaaa] = valor.split("/");
+                        row.push(new Date(`${aaaa}-${mm}-${dd}`));
+                     }
+                     else if (numberCols.includes(index) && /^\d{1,3}(?:\.\d{3})*,\d{2}$/.test(valor)) {
+                        const numero = parseFloat(valor.replace(/\./g, "").replace(",", "."));
+                        row.push(isNaN(numero) ? valor : numero);
+                     }
+                     else {
+                        row.push(valor);
+                     }
+                  });
+                  ws_data.push(row);
+               });
          
-         const ws = XLSX.utils.aoa_to_sheet(ws_data);
+               const ws = XLSX.utils.aoa_to_sheet(ws_data);
          
-         // Corrige tipo das células de data e número
-         const range = XLSX.utils.decode_range(ws["!ref"]);
-         for (let R = range.s.r + 1; R <= range.e.r; ++R) {
-         for (let C = range.s.c; C <= range.e.c; ++C) {
-         const ref = XLSX.utils.encode_cell({ r: R, c: C });
-         const cell = ws[ref];
-         if (!cell) continue;
+               const range = XLSX.utils.decode_range(ws["!ref"]);
+               for (let R = range.s.r + 1; R <= range.e.r; ++R) {
+                  for (let C = range.s.c; C <= range.e.c; ++C) {
+                     const ref = XLSX.utils.encode_cell({ r: R, c: C });
+                     const cell = ws[ref];
+                     if (!cell) continue;
          
-         if (dateCols.includes(C) && cell.v instanceof Date) {
-          cell.t = "d";
-          cell.z = "dd/mm/yyyy";
-         }
-         else if (numberCols.includes(C) && typeof cell.v === "number") {
-          cell.t = "n";
-          cell.z = "#,##0.00";
-         }
-         }
-         }
+                     if (dateCols.includes(C) && cell.v instanceof Date) {
+                        cell.t = "d";
+                        cell.z = "dd/mm/yyyy";
+                     }
+                     else if (numberCols.includes(C) && typeof cell.v === "number") {
+                        cell.t = "n";
+                        cell.z = "#,##0.00";
+                     }
+                  }
+               }
          
-         XLSX.utils.book_append_sheet(wb, ws, "Notas Fiscais");
-         XLSX.writeFile(wb, "Notas_Fiscais.xlsx");
-         } catch (erro) {
-         console.error("Erro na exportação:", erro);
-         alert("Erro ao exportar a planilha. Veja o console para detalhes.");
-         }
+               XLSX.utils.book_append_sheet(wb, ws, "Notas Fiscais");
+               XLSX.writeFile(wb, "Notas_Fiscais.xlsx");
+            } catch (erro) {
+               console.error("Erro na exportação:", erro);
+               alert("Erro ao exportar a planilha. Veja o console para detalhes.");
+            }
          }
       </script>
    </body>

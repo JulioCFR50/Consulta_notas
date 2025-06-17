@@ -11,154 +11,205 @@
       <title>Consulta Coco do Vale</title>
       <style>
          body {
-         margin: 0;
-         padding: 0;
-         height: 100%;
-         background: #f5f5f5;
-         font-family: Arial, sans-serif;
-         overflow: hidden;
-         }
-         .container {
-         display: flex;
-         min-height: 100vh;
-         justify-content: space-between;
-         flex-wrap: wrap;
-         }
-         .sidebar h3 {
-         font-size: 12px;
-         margin-top: 0;
-         }
-         .sidebar {
-         width: 5%;
-         background: #10dee6;
-         color: #e5f8ff;
-         padding: 10px;
-         box-sizing: border-box;
-         position: fixed;
-         top: 0;
-         left: 0;
-         bottom: 0;
-         overflow-y: auto;
-         }
-         .content {
-         flex: 1;
-         padding: 10px;
-         display: flex;
-         flex-direction: column;
-         overflow: hidden;
-         width: 95%;
-         height: 98vh;
-         margin-left: 5%;
-         padding: 10px;
-         }
-         .table-wrapper {
-         flex: 1;
-         overflow-y: auto;
-         }
-         #total-container {
-         font-size: 12px;
-         background: #fff;
-         padding: 10px;
-         border-top: 1px solid #ccc;
-         position: sticky;
-         bottom: 0;
-         z-index: 10;
-         }
-         thead th {
-         position: sticky;
-         top: 0;
-         background: #f2f2f2;
-         z-index: 5;
-         }
-         table {
-         width: 100%;
-         border-collapse: collapse;
-         background: white;
-         }
-         th,td {
-         border: 1px solid #ccc;
-         padding: 4px 6px;
-         font-size: 10px;
-         text-align: center;
-         }
-         th {
-         background: #f2f2f2;
-         }
-         .filter-group select,
-         .filter-group input {
-         padding: 2px 4px;
-         font-size: 11px;
-         max-width: 120px;
-         }
-         .filter-group {
-         display: flex;
-         flex-wrap: wrap;
-         align-items: center;
-         gap: 6px;
-         background: white;
-         padding: 8px;
-         border-bottom: 1px solid #ccc;
-         position: sticky;
-         top: 0;
-         z-index: 10;
-         }
-         .filter-group label {
-         font-size: 11px;
-         display: flex;
-         align-items: center;
-         gap: 4px;
-         white-space: nowrap;
-         }
-         .right-align {
-         text-align: right;
-         }
-         h3 {
-         display: block;
-         margin-block-start: 1em;
-         margin-block-end: 1em;
-         margin-inline-start: 0px;
-         margin-inline-end: 0px;
-         font-weight: bold;
-         unicode-bidi: isolate;
-         font-size: 12px;
-         }
-         label {
-         font-size: 12px;
-         font-weight: bold;
-         }
-         @media (max-width: 768px) {
-         /* Container flexível para caber na tela pequena */
-         .container {
-         flex-wrap: wrap; /* permite a sidebar e content ficarem em linhas separadas */
-         height: auto;    /* para evitar overflow vertical */
-         }
-         /* Sidebar ocupa toda a largura no celular, para não sobrepor */
-         .sidebar {
-         width: 100% !important;
-         font-size: 8px; /* tamanho menor, mas pode ajustar */
-         padding: 8px;
-         }
-         }
-         @media (max-width: 768px) {
-         .sidebar {
-         display: none !important;
-         }
-         .content {
-         width: 100% !important;
-         }
-         }
-         .filter-group {
-         flex-direction:row
-         }   
-         .top-right-logo {
-         position: fixed;
-         top: 10px;
-         right: 15px;
-         z-index: 100;
-         }
-         .logo-direita {
-         height: 50px;
-         }
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: #f5f5f5;
+  font-family: Arial, sans-serif;
+  overflow: hidden; /* cuidado com overflow, se precisar rolar vertical, pode mudar para auto */
+}
+
+.container {
+  display: flex;
+  min-height: 100vh;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.sidebar {
+  width: 5%;
+  background: #10dee6;
+  color: #e5f8ff;
+  padding: 10px;
+  box-sizing: border-box;
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  overflow-y: auto;
+}
+
+.sidebar h3 {
+  font-size: 12px;
+  margin-top: 0;
+  margin-bottom: 1em;
+  font-weight: bold;
+}
+
+.content {
+  flex: 1;
+  margin-left: 5%; /* para não ficar atrás da sidebar fixa */
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  width: 95%;
+  height: 98vh; /* cuidado se conteúdo for maior, pode cortar scroll */
+}
+
+.table-wrapper {
+  flex: 1;
+  overflow-y: auto;
+}
+
+#total-container {
+  font-size: 12px;
+  background: #fff;
+  padding: 10px;
+  border-top: 1px solid #ccc;
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
+}
+
+thead th {
+  position: sticky;
+  top: 0;
+  background: #f2f2f2;
+  z-index: 5;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+}
+
+th, td {
+  border: 1px solid #ccc;
+  padding: 4px 6px;
+  font-size: 10px;
+  text-align: center;
+}
+
+th {
+  background: #f2f2f2;
+}
+
+.filter-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  background: white;
+  padding: 8px;
+  border-bottom: 1px solid #ccc;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  flex-direction: row; /* seu ajuste original */
+}
+
+.filter-group label {
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+  font-weight: bold;
+}
+
+.filter-group select,
+.filter-group input[type="text"],
+.filter-group input[type="date"] {
+  padding: 2px 4px;
+  font-size: 10px; /* diminui font para inputs */
+  max-width: 120px;
+  height: 20px;
+  box-sizing: border-box;
+}
+
+.filter-group button {
+  font-size: 10px;
+  padding: 1px 5px;
+  height: 20px;
+  line-height: 18px;
+  cursor: pointer;
+  box-sizing: border-box;
+  border-radius: 3px;
+  border: 1px solid #ccc;
+  background-color: #f0f0f0;
+  transition: background-color 0.2s ease;
+}
+
+.filter-group button:hover {
+  background-color: #ddd;
+}
+
+.right-align {
+  text-align: right;
+}
+
+h3 {
+  font-weight: bold;
+  font-size: 12px;
+  margin-block-start: 1em;
+  margin-block-end: 1em;
+  margin-inline-start: 0;
+  margin-inline-end: 0;
+  unicode-bidi: isolate;
+}
+
+label {
+  font-size: 12px;
+  font-weight: bold;
+}
+
+/* RESPONSIVO */
+@media (max-width: 768px) {
+  /* Container flexível para caber na tela pequena */
+  .container {
+    flex-wrap: wrap;
+    height: auto; /* permite scroll vertical se necessário */
+  }
+
+  /* Sidebar ocupa toda a largura no celular, para não sobrepor */
+  .sidebar {
+    width: 100% !important;
+    font-size: 8px;
+    padding: 8px;
+    position: relative; /* para não ficar fixa */
+    height: auto;
+    overflow: visible;
+  }
+
+  /* Esconde a sidebar se quiser */
+  .sidebar {
+    display: none !important;
+  }
+
+  .content {
+    width: 100% !important;
+    margin-left: 0;
+    height: auto;
+  }
+
+  .filter-group {
+    justify-content: center;
+  }
+}
+
+.top-right-logo {
+  position: fixed;
+  top: 10px;
+  right: 15px;
+  z-index: 100;
+}
+
+.logo-direita {
+  height: 50px;
+}
+
       </style>
    </head>
    <body>
