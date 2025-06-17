@@ -9,7 +9,7 @@
       <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
       <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
       <title>Consulta Coco do Vale</title>
-      <style>
+       <style>
          body {
          margin: 0;
          padding: 0;
@@ -23,6 +23,10 @@
          min-height: 100vh;
          justify-content: space-between;
          flex-wrap: wrap;
+         }
+         .sidebar h3 {
+         font-size: 12px;
+         margin-top: 0;
          }
          .sidebar {
          width: 5%;
@@ -71,7 +75,8 @@
          border-collapse: collapse;
          background: white;
          }
-         th, td {
+         
+         th,td {
          border: 1px solid #ccc;
          padding: 4px 6px;
          font-size: 12px;
@@ -116,6 +121,7 @@
          margin-inline-end: 0px;
          font-weight: bold;
          unicode-bidi: isolate;
+         font-size: 12px;
          }
          label {
          font-size: 12px;
@@ -232,7 +238,7 @@
                         <th>Prev./Agenda</th>
                         <th>Dt Entrega</th>
                         <th>Tipo Carga</th>
-                        <th>Status Entrega</th>
+                        <th>Status Entrega</th>                        
                         <th>Valor</th>
                         <th>Peso</th>
                      </tr>
@@ -241,7 +247,8 @@
                </table>
             </div>
             <div id="total-container">
-               <strong>Total de Cargas:</strong> <span id="totalCargas" style="color: red;">0</span>                
+
+               <strong>Total de Cargas:</strong> <span id="totalCargas" style="color: red;">0</span>             
                <strong>Valor Bruto Total:</strong> R$
                <span id="totalValor" style="color: red;">0,00</span><br />
                <strong>Total por Previsão:</strong> R$
